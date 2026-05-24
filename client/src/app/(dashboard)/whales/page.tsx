@@ -1,0 +1,220 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useStore } from '@/store/useStore';
+import { generateRandomWhaleTx } from '@/lib/mockData';
+import { 
+  Waves, 
+  Activity, 
+  TrendingUp, 
+  ShieldAlert, 
+  CornerDownRight, 
+  ExternalLink,
+  ChevronRight,
+  UserCheck
+} from 'lucide-react';
+
+export default function WhaleTracker() {
+  const { whaleFeed, addWhaleTx, fetchWhales } = useStore();
+  const [filterSuspicious, setFilterSuspicious] = useState(false);
+
+  // Fetch initial telemetry from backend server
+  useEffect(() => {
+    fetchWhales();
+  }, [fetchWhales]);
+
+  // Trigger live simulated transactions in the background
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newTx = generateRandomWhaleTx();
+      addWhaleTx(newTx);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, [addWhaleTx]);
+
+  const filteredFeed = filterSuspicious 
+    ? whaleFeed.filter(tx => tx.isSuspicious)
+    : whaleFeed;
+
+  const smartWalletsLeaderboard = [
+    { rank: 1, name: 'suilens.sui', address: '0x7a8109d9f10be280b2a7582eb7bc3696f018888a', volumeUSD: '$2,145,000', score: 92, behavior: 'Accumulating' },
+    { rank: 2, name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', volumeUSD: '$890,200', score: 78, behavior: 'Farming Yield' },
+    { rank: 3, name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', volumeUSD: '$543,000', score: 45, behavior: 'Scalping Memes' }
+  ];
+
+  return (
+    <div className="space-y-8 text-left">
+      {/* Overview header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="font-display font-bold text-3xl text-white tracking-wide flex items-center gap-2">
+            <Waves className="w-8 h-8 text-cyan-glow" />
+            Sui Whale Tracker & Alerts
+          </h1>
+          <p className="font-sans text-xs text-white/40 uppercase tracking-widest mt-1">
+            Real-time large volume transfers and intelligence triggers
+          </p>
+        </div>
+        
+        {/* Toggle Filter suspicious */}
+        <button
+          onClick={() => setFilterSuspicious(!filterSuspicious)}
+          className={`px-4 py-2.5 rounded-xl font-display font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer
+            ${filterSuspicious 
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+              : 'bg-white/2 border-white/5 text-white/60 hover:text-white'
+            }
+          `}
+        >
+          {filterSuspicious ? 'Showing Suspicious Only 🚨' : 'Filter Suspicious Swaps'}
+        </button>
+      </div>
+
+      {/* Stats summary board */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-panel p-5 rounded-2xl relative overflow-hidden text-left">
+          <span className="text-[10px] font-display font-semibold tracking-wider text-white/40 uppercase">Total Whales Tracked</span>
+          <h3 className="font-display font-extrabold text-2xl text-white mt-1">1,489</h3>
+          <span className="font-sans text-[10px] text-success-green flex items-center gap-1 mt-2">
+            <TrendingUp className="w-3 h-3" />
+            +18 new profiles today
+          </span>
+        </div>
+
+        <div className="glass-panel p-5 rounded-2xl relative overflow-hidden text-left">
+          <span className="text-[10px] font-display font-semibold tracking-wider text-white/40 uppercase">Large Swaps (24h)</span>
+          <h3 className="font-display font-extrabold text-2xl text-white mt-1">2,810 tx</h3>
+          <span className="font-sans text-[10px] text-white/40 mt-2 block">
+            Average Swap value: $142,500 USD
+          </span>
+        </div>
+
+        <div className="glass-panel-cyan p-5 rounded-2xl relative overflow-hidden text-left">
+          <span className="text-[10px] font-display font-semibold tracking-wider text-white/40 uppercase">Ecosystem Health Score</span>
+          <h3 className="font-display font-extrabold text-2xl text-white mt-1">94/100</h3>
+          <span className="font-sans text-[10px] text-cyan-glow flex items-center gap-1 mt-2 font-semibold">
+            <UserCheck className="w-3.5 h-3.5" />
+            High capital inflow verified
+          </span>
+        </div>
+      </div>
+
+      {/* Grid 2: Real-time Feed vs. Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Side: Real-time Activity feed log */}
+        <div className="lg:col-span-7 glass-panel p-6 rounded-2xl space-y-6">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+            <Activity className="w-5 h-5 text-cyan-glow animate-pulse" />
+            <h3 className="font-display font-bold text-base text-white">Live Large Ledger Activity Feed</h3>
+          </div>
+
+          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+            {filteredFeed.map((tx) => (
+              <div 
+                key={tx.id}
+                className={`p-4 rounded-xl border text-left space-y-3 transition-all hover:bg-white/3
+                  ${tx.isSuspicious 
+                    ? 'bg-rose-500/5 border-rose-500/20' 
+                    : 'bg-white/2 border-white/5'
+                  }
+                `}
+              >
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2 font-display font-extrabold tracking-wider text-white">
+                    <span className={`w-2 h-2 rounded-full ${tx.isSuspicious ? 'bg-rose-500 animate-ping' : 'bg-cyan-glow'}`} />
+                    <span className="uppercase">{tx.type} TRANSACTION</span>
+                    {tx.isSuspicious && (
+                      <span className="font-display font-extrabold text-[9px] bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2 py-0.5 rounded uppercase tracking-widest animate-pulse flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3 text-rose-500" />
+                        SUSPICIOUS
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-mono text-white/40 text-[10px]">
+                    {new Date(tx.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs font-sans">
+                  {/* Senders / Receivers */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-white/70">
+                      <span className="w-4 text-white/30 text-[9px] uppercase">From</span>
+                      <Link 
+                        href={`/wallet/${tx.sender}`}
+                        className="font-mono text-white/90 font-semibold hover:text-cyan-glow flex items-center gap-1 hover:underline cursor-pointer"
+                      >
+                        {tx.senderName || tx.sender.slice(0, 10)}
+                        <ExternalLink className="w-3 h-3 text-white/30" />
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-white/70">
+                      <span className="w-4 text-white/30 text-[9px] uppercase">To</span>
+                      <Link 
+                        href={`/wallet/${tx.receiver}`}
+                        className="font-mono text-white/90 font-semibold hover:text-cyan-glow flex items-center gap-1 hover:underline cursor-pointer"
+                      >
+                        {tx.receiverName || tx.receiver.slice(0, 10)}
+                        <ExternalLink className="w-3 h-3 text-white/30" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Transfer volumes */}
+                  <div className="text-left sm:text-right">
+                    <span className="font-display font-extrabold text-sm text-cyan-glow block">
+                      {tx.amount.toLocaleString()} {tx.token}
+                    </span>
+                    <span className="font-sans text-[11px] text-white/50 block font-medium">
+                      ~${tx.amountUSD.toLocaleString()} USD
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Side: Smart Money leaderboard */}
+        <div className="lg:col-span-5 glass-panel p-6 rounded-2xl space-y-6">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+            <UserCheck className="w-5 h-5 text-purple-glow" />
+            <h3 className="font-display font-bold text-base text-white">Trending Smart Wallets</h3>
+          </div>
+
+          <div className="space-y-4 text-left">
+            {smartWalletsLeaderboard.map((item) => (
+              <Link 
+                key={item.rank}
+                href={`/wallet/${item.address}`}
+                className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/2 hover:bg-cyan-glow/5 hover:border-cyan-glow/30 transition-all block group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-display font-bold text-sm text-purple-glow bg-purple-glow/10 w-7 h-7 rounded-lg flex items-center justify-center">
+                    #{item.rank}
+                  </span>
+                  <div>
+                    <span className="font-display font-bold text-xs text-white group-hover:text-cyan-glow transition-colors block">
+                      {item.name}
+                    </span>
+                    <span className="font-sans text-[10px] text-white/40 uppercase tracking-widest font-semibold block mt-0.5">
+                      {item.behavior}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="font-mono text-xs font-bold text-white block">{item.volumeUSD}</span>
+                  <span className="font-sans text-[10px] text-success-green block font-semibold">
+                    Smart Score: {item.score}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
