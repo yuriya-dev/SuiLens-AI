@@ -73,9 +73,9 @@ export interface SavedAnalysis {
 
 // Global server memory state representing decentralized DB snapshots
 export const serverSavedAnalyses: SavedAnalysis[] = [
-  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: new Date().toISOString(), riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "https://publisher.walrus.storage/v1/blobs/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
-  { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: new Date().toISOString(), riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "https://publisher.walrus.storage/v1/blobs/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
-  { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: new Date().toISOString(), riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "https://publisher.walrus.storage/v1/blobs/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
+  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: new Date().toISOString(), riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
+  { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: new Date().toISOString(), riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
+  { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: new Date().toISOString(), riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
 ];
 
 export const serverWhaleFeed: WhaleFeedItem[] = [
@@ -175,6 +175,41 @@ export const generateMockWallet = (address: string): WalletData => {
   const hashVal = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const calculatedRisk = (hashVal % 75) + 15;
   const isSuiName = address.endsWith('.sui');
+
+  // If the scanned address represents a Sui token struct type, return a specialized token contract profile
+  if (address.includes('::')) {
+    const parts = address.split('::');
+    const symbol = parts[parts.length - 1];
+    const moduleName = parts[parts.length - 2];
+    const packageAddress = parts[0];
+    const shortPackage = `${packageAddress.slice(0, 8)}...${packageAddress.slice(-4)}`;
+
+    return {
+      address: address,
+      ensName: `${symbol.toLowerCase()}.sui`,
+      portfolioValueUSD: 0,
+      riskScore: 35,
+      smartMoneyScore: 82,
+      whaleScore: 0,
+      scamExposureScore: 10,
+      personality: `Decentralized Token Primitive (${symbol})`,
+      tag: "Verified Token",
+      summaryProfessional: `This asset is a fully qualified Sui Move coin struct of type ${symbol}. The contract package resides at ${shortPackage} under the module '${moduleName}'. Static structural verification indicates standard Move coin specifications with a verified supply registry. Trust score is high due to standard Move standard library implementation.`,
+      summaryRoast: `A custom token contract. Your package is ${shortPackage} and module is '${moduleName}'. Excellent! It has standard move code which means you probably just cloned a standard template. Still, it's safer than 99% of ERC-20 rug pulls. 35% risk score.`,
+      summaryExplainLike5: `This is a digital coin template called ${symbol}. It was created inside a special box in the digital city. The city police checked the rules inside the box, and it follows all the safe rules for making new coins.`,
+      confidenceScore: 95,
+      tokenAllocations: [
+        { symbol: symbol, name: `${symbol} Token Asset`, balance: 1000000000, valueUSD: 0, percentage: 100, color: "#8b5cf6" }
+      ],
+      activityTimeline: [
+        { id: "tx-tok-1", type: "contract_call", amountUSD: 0, timestamp: new Date().toISOString(), status: "success", hash: "0x_token_creation_hash", interactedWith: "Package Deployer", isSuspicious: false }
+      ],
+      riskIndicators: [
+        { title: "Standard Move Coin Template", description: "Implements standard coin registry patterns from the Sui framework, guaranteeing lack of malicious backdoors.", severity: "low" },
+        { title: "Verified Package Publisher", description: "Sui system validator checks confirm compiled Move bytecode matches publisher proof.", severity: "low" }
+      ]
+    };
+  }
 
   let personality = "Moderate Multi-Asset Trader";
   let tag = "Active Trader";

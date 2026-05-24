@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Cpu, Terminal, ShieldAlert } from 'lucide-react';
+import { Cpu, Terminal } from 'lucide-react';
 
 export default function LoadingScanner() {
   const [activeStep, setActiveStep] = useState(0);
+  const [stepTimes, setStepTimes] = useState<string[]>([]);
 
   const steps = [
     { text: 'Establishing secure Tatum RPC channel to Sui Mainnet...', status: 'success' },
@@ -16,10 +17,21 @@ export default function LoadingScanner() {
   ];
 
   useEffect(() => {
+    // Record the first step time on mount (client-side only)
+    setStepTimes([new Date().toLocaleTimeString()]);
+
     // Progressively step through the logs
     const interval = setInterval(() => {
       setActiveStep((prev) => {
-        if (prev < steps.length - 1) return prev + 1;
+        if (prev < steps.length - 1) {
+          const nextStep = prev + 1;
+          setStepTimes((prevTimes) => {
+            const newTimes = [...prevTimes];
+            newTimes[nextStep] = new Date().toLocaleTimeString();
+            return newTimes;
+          });
+          return nextStep;
+        }
         return prev;
       });
     }, 1100);
@@ -64,7 +76,7 @@ export default function LoadingScanner() {
                 ${idx === activeStep ? 'text-cyan-glow font-bold' : 'text-white/60'}
               `}
             >
-              <span className="text-white/20 select-none">[{new Date().toLocaleTimeString()}]</span>
+              <span className="text-white/20 select-none">[{stepTimes[idx] || '...'}]</span>
               <span className="text-purple-glow">▶</span>
               <span className="flex-1">{step.text}</span>
               {idx < activeStep ? (

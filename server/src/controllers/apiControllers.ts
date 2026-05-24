@@ -4,12 +4,13 @@ import { WalrusService } from '../services/walrusService';
 import { AIService } from '../services/aiService';
 import { serverWhaleFeed, generateMockWallet, mockWallets } from '../services/mockDb';
 
-// Validate address inputs using Regex patterns for Sui wallet standards
+// Validate address inputs using Regex patterns for Sui standards (supports 40-char demo, 64-char standard addresses, and package::module::struct token types)
 const validateSuiAddress = (addr: string): boolean => {
   const cleanAddr = addr.trim();
-  const suiAddressRegex = /^0x[a-fA-F0-9]{64}$/;
+  const suiAddressRegex = /^0x[a-fA-F0-9]{40}$|^0x[a-fA-F0-9]{64}$/;
   const suiNameRegex = /^[a-zA-Z0-9_-]+\.sui$/;
-  return suiAddressRegex.test(cleanAddr) || suiNameRegex.test(cleanAddr);
+  const suiTokenTypeRegex = /^0x[a-fA-F0-9]{40,64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+$/;
+  return suiAddressRegex.test(cleanAddr) || suiNameRegex.test(cleanAddr) || suiTokenTypeRegex.test(cleanAddr);
 };
 
 export const analyzeWalletController = async (req: Request, res: Response) => {
@@ -21,7 +22,7 @@ export const analyzeWalletController = async (req: Request, res: Response) => {
   // Address sanitization
   if (!validateSuiAddress(address)) {
     return res.status(400).json({
-      error: 'Invalid wallet address or Sui name format. Standard addresses must be a 64-character hexadecimal string starting with 0x, or end in .sui.'
+      error: 'Invalid address or format. Standard addresses must be a 40 or 64-character hexadecimal string starting with 0x, or end in .sui. Token structs must follow the pattern: packageId::module::struct.'
     });
   }
 
@@ -78,7 +79,7 @@ export const chatController = async (req: Request, res: Response) => {
   // Address sanitization
   if (!validateSuiAddress(address)) {
     return res.status(400).json({
-      error: 'Invalid wallet address or Sui name format. Standard addresses must be a 64-character hexadecimal string starting with 0x, or end in .sui.'
+      error: 'Invalid address or format. Standard addresses must be a 40 or 64-character hexadecimal string starting with 0x, or end in .sui. Token structs must follow the pattern: packageId::module::struct.'
     });
   }
 

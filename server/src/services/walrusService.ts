@@ -16,7 +16,7 @@ export class WalrusService {
     const size = JSON.stringify(reportData).length || 15000;
     
     let blobId = `walrus-blob-sui-lens-${randomHash}`;
-    let walrusUrl = `${walrusPublisher}/v1/blobs/${blobId}`;
+    let walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`;
 
     // If live mode is enabled, try uploading to actual Walrus publisher node
     if (!simulateMode && walrusPublisher) {
@@ -31,12 +31,15 @@ export class WalrusService {
 
         if (response.ok) {
           const resJson = await response.json();
-          // Walrus publisher returns JSON with newlyCreated.blobObject.blobId
+          // Handle both brand-new blobs and pre-certified existing blobs
           if (resJson?.newlyCreated?.blobObject?.blobId) {
             blobId = resJson.newlyCreated.blobObject.blobId;
-            walrusUrl = `${walrusPublisher}/v1/blobs/${blobId}`;
-            console.log(`[Walrus Upload Success] Received Blob ID: ${blobId}`);
+            console.log(`[Walrus Upload Success] Brand New Blob ID: ${blobId}`);
+          } else if (resJson?.alreadyCertified?.blobId) {
+            blobId = resJson.alreadyCertified.blobId;
+            console.log(`[Walrus Upload Success] Pre-Existing Blob ID: ${blobId}`);
           }
+          walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`;
         }
       } catch (err) {
         console.error('[Walrus Service Error] Fallback triggered:', err);

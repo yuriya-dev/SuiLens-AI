@@ -17,6 +17,8 @@ interface ChatMessage {
 
 interface AppState {
   connectedWallet: string | null;
+  isWalletVerified: boolean;
+  isVerifyingWallet: boolean;
   searchAddress: string;
   currentWalletData: WalletData | null;
   whaleFeed: WhaleFeedItem[];
@@ -33,6 +35,10 @@ interface AppState {
   // Actions
   connectWallet: (address: string) => void;
   disconnectWallet: () => void;
+  verifyWallet: (
+    address: string, 
+    signFn: (params: { message: Uint8Array }) => Promise<{ signature: string; bytes: string }>
+  ) => Promise<void>;
   setSearchAddress: (address: string) => void;
   analyzeWallet: (address: string) => Promise<WalletData>;
   fetchWhales: () => Promise<void>;
@@ -45,6 +51,8 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   connectedWallet: null,
+  isWalletVerified: false,
+  isVerifyingWallet: false,
   searchAddress: '',
   currentWalletData: null,
   whaleFeed: [],
@@ -60,7 +68,50 @@ export const useStore = create<AppState>((set, get) => ({
 
   connectWallet: (address) => set({ connectedWallet: address }),
   
-  disconnectWallet: () => set({ connectedWallet: null }),
+  disconnectWallet: () => set({ connectedWallet: null, isWalletVerified: false }),
+
+  verifyWallet: async (address, signFn) => {
+    set({ isVerifyingWallet: true });
+    try {
+      // 1. Get challenge nonce from backend
+      const nonceRes = await fetch(`${BACKEND_URL}/api/auth/nonce`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address })
+      });
+      if (!nonceRes.ok) throw new Error('Failed to retrieve authentication nonce challenge.');
+      
+      const { nonce } = await nonceRes.json();
+      
+      // 2. Trigger wallet signing popup
+      const encoder = new TextEncoder();
+      const messageBytes = encoder.encode(nonce);
+      const { signature, bytes } = await signFn({ message: messageBytes });
+
+      // 3. Submit signature for cryptographic verification on backend
+      const verifyRes = await fetch(`${BACKEND_URL}/api/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, signature, bytes })
+      });
+
+      if (!verifyRes.ok) {
+        const errorData = await verifyRes.json();
+        throw new Error(errorData.error || 'Cryptographic signature verification failed.');
+      }
+
+      const verifyData = await verifyRes.json();
+      if (verifyData.verified) {
+        set({ isWalletVerified: true, isVerifyingWallet: false });
+      } else {
+        throw new Error('Verification completed but returned unauthenticated.');
+      }
+    } catch (err) {
+      console.error(err);
+      set({ isWalletVerified: false, isVerifyingWallet: false });
+      throw err;
+    }
+  },
 
   setSearchAddress: (address) => set({ searchAddress: address }),
 

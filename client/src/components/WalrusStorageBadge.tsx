@@ -24,12 +24,14 @@ export default function WalrusStorageBadge({ blobId, sizeBytes }: WalrusStorageB
     : '14.5 KB';
 
   return (
-    <div className="relative inline-block">
+    <div 
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+      className="relative inline-block"
+    >
       {/* Badge Trigger Capsule */}
       <div 
         onClick={() => setShowTooltip(!showTooltip)}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(139,92,246,0.1)] hover:bg-[rgba(139,92,246,0.18)] border border-purple-glow/30 hover:border-purple-glow text-purple-glow text-[11px] font-display font-bold uppercase tracking-wider cursor-help transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.05)]"
       >
         <Database className="w-3.5 h-3.5 text-purple-glow animate-pulse" />
@@ -38,7 +40,7 @@ export default function WalrusStorageBadge({ blobId, sizeBytes }: WalrusStorageB
 
       {/* Floating Info Dropdown Panel */}
       {showTooltip && (
-        <div className="absolute right-0 top-full mt-2.5 w-72 glass-panel border-purple-glow/30 bg-[#0b1220]/95 rounded-xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-50 transition-all duration-300 select-text">
+        <div className="absolute right-0 top-full mt-2 w-72 glass-panel border-purple-glow/30 bg-[#0b1220]/95 rounded-xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-50 transition-all duration-300 select-text">
           <div className="flex items-center gap-2 text-purple-glow border-b border-white/5 pb-2 mb-3">
             <CheckCircle className="w-4 h-4 text-purple-glow" />
             <span className="font-display font-bold text-[11px] tracking-widest uppercase">CRYPTOGRAPHIC PROOF</span>
@@ -78,7 +80,7 @@ export default function WalrusStorageBadge({ blobId, sizeBytes }: WalrusStorageB
 
             {/* View Link */}
             <a 
-              href={`https://publisher.walrus.storage/v1/blobs/${blobId}`}
+              href={`https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-1.5 w-full bg-purple-glow/10 hover:bg-purple-glow text-purple-glow hover:text-[#050816] py-1.5 rounded-lg border border-purple-glow/20 transition-all font-display font-bold uppercase tracking-wider text-[9px] cursor-pointer mt-1"

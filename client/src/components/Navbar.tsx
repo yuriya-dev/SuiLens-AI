@@ -4,16 +4,22 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { Search, Wallet, LogOut, Radio, Cpu, Database } from 'lucide-react';
+import { ConnectModal, useCurrentAccount, useDisconnectWallet, useSignPersonalMessage } from '@mysten/dapp-kit';
 
 export default function Navbar() {
   const router = useRouter();
   const { 
     connectedWallet, 
-    connectWallet, 
-    disconnectWallet, 
     analyzeWallet, 
-    isAnalyzing 
+    isAnalyzing,
+    isWalletVerified,
+    isVerifyingWallet,
+    verifyWallet
   } = useStore();
+
+  const account = useCurrentAccount();
+  const { mutate: disconnect } = useDisconnectWallet();
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
 
   const [inputVal, setInputVal] = useState('');
 
@@ -30,12 +36,12 @@ export default function Navbar() {
     }
   };
 
-  const handleConnectSimulated = () => {
-    if (connectedWallet) {
-      disconnectWallet();
-    } else {
-      // Connect default smart money address
-      connectWallet('0x7a8109d9f10be280b2a7582eb7bc3696f018888a');
+  const handleVerify = async () => {
+    if (!account) return;
+    try {
+      await verifyWallet(account.address, signPersonalMessage);
+    } catch (err: any) {
+      alert(`Wallet cryptographic verification failed: ${err.message || err}`);
     }
   };
 
@@ -89,23 +95,49 @@ export default function Navbar() {
         </div>
 
         {/* Connect Wallet Button */}
-        <button
-          onClick={handleConnectSimulated}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer
-            ${connectedWallet 
-              ? 'bg-[rgba(139,92,246,0.15)] hover:bg-[rgba(139,92,246,0.25)] border border-purple-glow/50 hover:border-purple-glow text-purple-glow' 
-              : 'bg-gradient-to-r from-cyan-glow to-sui-blue hover:from-sui-blue hover:to-cyan-glow text-[#050816] shadow-[0_0_15px_rgba(0,209,255,0.25)] hover:shadow-[0_0_20px_rgba(0,209,255,0.4)]'
+        {account ? (
+          <div className="flex items-center gap-3">
+            {/* Cryptographic Verification Badge */}
+            {isWalletVerified ? (
+              <div className="flex items-center gap-1.5 bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.3)] text-[#10b981] px-3 py-1.5 rounded-lg text-[10px] font-display font-bold tracking-wider uppercase shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
+                🛡️ Verified
+              </div>
+            ) : (
+              <button
+                onClick={handleVerify}
+                disabled={isVerifyingWallet}
+                className="flex items-center gap-1.5 bg-[rgba(245,158,11,0.15)] hover:bg-[rgba(245,158,11,0.25)] border border-[rgba(245,158,11,0.4)] hover:border-[rgba(245,158,11,0.8)] text-[#f59e0b] px-3 py-1.5 rounded-lg text-[10px] font-display font-bold tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer disabled:opacity-50"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-ping"></span>
+                {isVerifyingWallet ? 'Verifying...' : '⚠️ Verify Wallet'}
+              </button>
+            )}
+
+            {/* Address Badge / Disconnect Button */}
+            <button
+              onClick={() => disconnect()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer bg-[rgba(139,92,246,0.15)] hover:bg-[rgba(139,92,246,0.25)] border border-purple-glow/50 hover:border-purple-glow text-purple-glow"
+            >
+              <Wallet className="w-4 h-4" />
+              <span>
+                {truncateAddress(account.address)}
+              </span>
+              <LogOut className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 ml-1 hover:text-rose-500 transition-colors" />
+            </button>
+          </div>
+        ) : (
+          <ConnectModal
+            trigger={
+              <button
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer bg-gradient-to-r from-cyan-glow to-sui-blue hover:from-sui-blue hover:to-cyan-glow text-[#050816] shadow-[0_0_15px_rgba(0,209,255,0.25)] hover:shadow-[0_0_20px_rgba(0,209,255,0.4)]"
+              >
+                <Wallet className="w-4 h-4" />
+                <span>Connect Wallet</span>
+              </button>
             }
-          `}
-        >
-          <Wallet className="w-4 h-4" />
-          <span>
-            {connectedWallet ? truncateAddress(connectedWallet) : 'Connect Wallet'}
-          </span>
-          {connectedWallet && (
-            <LogOut className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 ml-1 hover:text-rose-500 transition-colors" />
-          )}
-        </button>
+          />
+        )}
       </div>
     </header>
   );
