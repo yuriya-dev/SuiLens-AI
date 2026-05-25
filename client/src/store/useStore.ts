@@ -60,11 +60,11 @@ export const useStore = create<AppState>((set, get) => ({
   chatThreads: {},
   isAnalyzing: false,
 
-  // Default API configuration
-  simulateMode: false,
-  tatumApiKey: '',
-  walrusPublisher: 'https://publisher.walrus-testnet.walrus.space',
-  openaiApiKey: '',
+  // Default API configuration (loaded from localStorage dynamically with Next.js SSR safeguard)
+  simulateMode: typeof window !== 'undefined' ? (localStorage.getItem('suilens_simulateMode') === 'true') : false,
+  tatumApiKey: typeof window !== 'undefined' ? (localStorage.getItem('suilens_tatumApiKey') || '') : '',
+  walrusPublisher: typeof window !== 'undefined' ? (localStorage.getItem('suilens_walrusPublisher') || 'https://publisher.walrus-testnet.walrus.space') : 'https://publisher.walrus-testnet.walrus.space',
+  openaiApiKey: typeof window !== 'undefined' ? (localStorage.getItem('suilens_openaiApiKey') || '') : '',
 
   connectWallet: (address) => set({ connectedWallet: address }),
   
@@ -262,8 +262,24 @@ export const useStore = create<AppState>((set, get) => ({
     return { chatThreads: threads };
   }),
 
-  updateSettings: (newSettings) => set((state) => ({
-    ...state,
-    ...newSettings
-  }))
+  updateSettings: (newSettings) => set((state) => {
+    if (typeof window !== 'undefined') {
+      if (newSettings.simulateMode !== undefined) {
+        localStorage.setItem('suilens_simulateMode', String(newSettings.simulateMode));
+      }
+      if (newSettings.tatumApiKey !== undefined) {
+        localStorage.setItem('suilens_tatumApiKey', newSettings.tatumApiKey);
+      }
+      if (newSettings.walrusPublisher !== undefined) {
+        localStorage.setItem('suilens_walrusPublisher', newSettings.walrusPublisher);
+      }
+      if (newSettings.openaiApiKey !== undefined) {
+        localStorage.setItem('suilens_openaiApiKey', newSettings.openaiApiKey);
+      }
+    }
+    return {
+      ...state,
+      ...newSettings
+    };
+  })
 }));

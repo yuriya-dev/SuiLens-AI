@@ -16,6 +16,77 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// Sleek lightweight React Markdown segment compiler
+function MarkdownText({ content }: { content: string }) {
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-2">
+      {lines.map((line, idx) => {
+        // Detect bulleted list items (exclude bold ** lines from starting character check)
+        const trimmed = line.trim();
+        const isListItem = trimmed.startsWith('•') || trimmed.startsWith('-') || (trimmed.startsWith('*') && !trimmed.startsWith('**'));
+        // Strip out bullet symbol for custom alignment
+        const cleanLine = isListItem 
+          ? trimmed.substring(1).trim() 
+          : line;
+
+        // Custom Regex parsing for bold (**), inline code (`), and links ([text](url))
+        const regex = /(\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g;
+        const segments = cleanLine.split(regex);
+        const processedSegments: React.ReactNode[] = [];
+
+        segments.forEach((seg, sIdx) => {
+          if (seg.startsWith('**') && seg.endsWith('**')) {
+            processedSegments.push(
+              <strong key={sIdx} className="font-bold text-cyan-glow">
+                {seg.substring(2, seg.length - 2)}
+              </strong>
+            );
+          } else if (seg.startsWith('`') && seg.endsWith('`')) {
+            processedSegments.push(
+              <code key={sIdx} className="font-mono bg-[#050816] px-1.5 py-0.5 rounded text-cyan-glow border border-white/5 text-[10px] tracking-wide">
+                {seg.substring(1, seg.length - 1)}
+              </code>
+            );
+          } else if (seg.startsWith('[') && seg.includes('](') && seg.endsWith(')')) {
+            const label = seg.substring(1, seg.indexOf(']('));
+            const url = seg.substring(seg.indexOf('](') + 2, seg.length - 1);
+            processedSegments.push(
+              <a 
+                key={sIdx} 
+                href={url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-cyan-glow underline hover:text-white transition-colors"
+              >
+                {label}
+              </a>
+            );
+          } else {
+            processedSegments.push(<span key={sIdx}>{seg}</span>);
+          }
+        });
+
+        if (isListItem) {
+          return (
+            <div key={idx} className="flex gap-2 items-start pl-2">
+              <span className="text-cyan-glow shrink-0 mt-1.5 text-[8px]">•</span>
+              <div className="flex-1 leading-relaxed">{processedSegments}</div>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="min-h-[1.1rem] leading-relaxed">
+            {processedSegments}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function ChatWindow() {
   const searchParams = useSearchParams();
   const addressParam = searchParams.get('address');
@@ -23,8 +94,7 @@ function ChatWindow() {
   const { 
     currentWalletData, 
     chatThreads, 
-    addChatMessage, 
-    analyzeWallet 
+    addChatMessage 
   } = useStore();
 
   const [input, setInput] = useState('');
@@ -53,48 +123,26 @@ function ChatWindow() {
   }, [messages, isReplying]);
 
   const presetQuestions = [
-    { q: "Is this wallet a smart whale?", prompt: "Analyze if this wallet exhibits smart money buy-ins, low risk profile, or early entry positions. Answer thoroughly." },
+    { q: "Is this wallet a smart money?", prompt: "Analyze if this wallet exhibits smart money buy-ins, low risk profile, or early entry positions. Answer thoroughly." },
     { q: "Explain the biggest risk factors here.", prompt: "Explain the biggest vulnerabilities in this wallet portfolio. Focus on token concentration and protocol exposure risks." },
-    { q: "Roast this wallet's memecoin allocations.", prompt: "Unleash a savage AI roast regarding this wallet's meme coin exposure and degenerate trading patterns." },
+    { q: "Roast this wallet's allocations.", prompt: "Unleash a savage AI roast regarding this wallet's meme coin exposure and degenerate trading patterns." },
     { q: "Explain like I am 5 years old.", prompt: "Explain the general behavior of this wallet using a simple kid-friendly story." }
   ];
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isReplying) return;
 
-    // 1. Add User Message
-    addChatMessage(activeAddress, { role: 'user', content: text });
     setInput('');
     setIsReplying(true);
 
-    // 2. Simulate streaming reply delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // 3. Assemble dynamic contextual AI response based on active wallet datasets
-    let aiContent = "I have scanned the blockchain entries. The SUI ledger is currently synchronized.";
-    const isRoast = text.toLowerCase().includes('roast') || text.toLowerCase().includes('degenerate');
-    const isEli5 = text.toLowerCase().includes('5') || text.toLowerCase().includes('five');
-    const isRisk = text.toLowerCase().includes('risk') || text.toLowerCase().includes('vulnerabilit');
-
-    if (currentWalletData && currentWalletData.address.toLowerCase() === activeAddress) {
-      if (isRoast) {
-        aiContent = `🔥 AI ROAST INITIATED:\n\n"${currentWalletData.summaryRoast}"\n\nGas spent: high. Regrets: probably higher.`;
-      } else if (isEli5) {
-        aiContent = `👶 EXPLAINING LIKE YOU'RE 5:\n\n"${currentWalletData.summaryExplainLike5}"`;
-      } else if (isRisk) {
-        aiContent = `🚨 RISK PROFILE METRIC DEEP-DIVE:\n\nOverall Risk Score is ${currentWalletData.riskScore}%. Here is the breakdown:\n\n` + 
-          currentWalletData.riskIndicators.map((ind, i) => `${i+1}. **${ind.title}** (Severity: ${ind.severity.toUpperCase()})\n   └ ${ind.description}`).join('\n\n');
-      } else {
-        aiContent = `📊 PROFESSIONAL PORTFOLIO BRIEF:\n\n${currentWalletData.summaryProfessional}\n\n**Holdings Allocation Breakdown:**\n` + 
-          currentWalletData.tokenAllocations.map(tok => `• **${tok.symbol}** (${tok.name}): ${tok.percentage}% allocation (~$${tok.valueUSD.toLocaleString()})`).join('\n') + 
-          `\n\nIs there a specific contract or transaction hash you would like me to dissect further?`;
-      }
-    } else {
-      aiContent = `I am analyzing the wallet address ${activeAddress}. According to recent Tatum ledger snapshots, this wallet operates with standard DeFi activities. Interacted with Cetus routing and Scallop pools, exhibiting moderate risk levels. Try entering 'Explain the biggest risk factors here' to see complete detailed parameters.`;
+    try {
+      // Direct call to Zustand action which handles User addition, API fetch, and Assistant append
+      await addChatMessage(activeAddress, { role: 'user', content: text });
+    } catch (error) {
+      console.error('[Copilot Chat Error]', error);
+    } finally {
+      setIsReplying(false);
     }
-
-    addChatMessage(activeAddress, { role: 'assistant', content: aiContent });
-    setIsReplying(false);
   };
 
   const activeWalletShort = activeAddress ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}` : 'Loading...';
@@ -147,13 +195,13 @@ function ChatWindow() {
                   </div>
                 )}
                 
-                <div className={`p-4.5 rounded-2xl max-w-[85%] leading-relaxed font-sans text-xs shadow-md border whitespace-pre-line
+                <div className={`p-4.5 rounded-2xl max-w-[85%] shadow-md border text-xs
                   ${msg.role === 'user'
                     ? 'bg-cyan-glow/10 border-cyan-glow/20 text-white rounded-tr-none'
                     : 'bg-[#0b1220]/75 border-white/5 text-white/90 rounded-tl-none'
                   }
                 `}>
-                  {msg.content}
+                  <MarkdownText content={msg.content} />
                 </div>
 
                 {msg.role === 'user' && (
