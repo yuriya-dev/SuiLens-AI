@@ -1,4 +1,5 @@
 import { SavedAnalysis, serverSavedAnalyses } from './mockDb';
+import { prisma, isDbActive } from './dbService';
 
 export class WalrusService {
   /**
@@ -16,7 +17,8 @@ export class WalrusService {
     const size = JSON.stringify(reportData).length || 15000;
     
     let blobId = `walrus-blob-sui-lens-${randomHash}`;
-    let walrusUrl = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`;
+    const port = process.env.PORT || 3001;
+    let walrusUrl = `http://localhost:${port}/api/walrus/blob/${blobId}`;
 
     // If live mode is enabled, try uploading to actual Walrus publisher node
     if (!simulateMode && walrusPublisher) {
@@ -61,6 +63,39 @@ export class WalrusService {
       serverSavedAnalyses[existsIdx] = newSave;
     } else {
       serverSavedAnalyses.unshift(newSave);
+    }
+
+    // Persist in Supabase Postgres when active
+    if (isDbActive) {
+      try {
+        console.log(`[Database] Persisting report for ${address} in Supabase...`);
+        const cleanAddress = address.toLowerCase();
+        
+        // 1. Ensure user exists
+        await prisma.user.upsert({
+          where: { address: cleanAddress },
+          update: {},
+          create: { address: cleanAddress }
+        });
+
+        // 2. Create/upsert the report mapping
+        await prisma.report.upsert({
+          where: { blobId },
+          update: {
+            riskScore,
+            sizeBytes: size
+          },
+          create: {
+            address: cleanAddress,
+            riskScore,
+            blobId,
+            sizeBytes: size
+          }
+        });
+        console.log(`[Database Success] Report mapped to user ${cleanAddress} in Postgres.`);
+      } catch (dbErr) {
+        console.error('[Database Error] Failed to persist report in Postgres:', dbErr);
+      }
     }
 
     return newSave;

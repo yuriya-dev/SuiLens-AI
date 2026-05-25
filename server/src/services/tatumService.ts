@@ -2,18 +2,93 @@ import { WalletData, mockWallets, generateMockWallet, TokenAllocation, RiskIndic
 
 export class TatumService {
   /**
-   * Retrieves Sui Wallet balance, transaction activity and smart contracts interaction logs.
-   * Leverages Tatum RPC endpoint gateway or falls back to mock intelligence engine.
+   * Fetches real-time spot market prices for core Sui ecosystem assets from public ticker APIs.
+   * Falls back to conservative averages if offline or API rates are hit.
+   */
+  static async getRealTimePrices(): Promise<Record<string, number>> {
+    const prices: Record<string, number> = {
+      SUI: 2.10,    // robust fallbacks
+      CETUS: 0.35,
+      DEEP: 0.06,
+      USDC: 1.00,
+      HASUI: 2.15
+    };
+
+    try {
+      console.log('[RPC Service] Fetching real-time market spot rates from Binance public ticker...');
+      
+      // Fetch SUI/USDT
+      try {
+        const suiRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SUIUSDT');
+        if (suiRes.ok) {
+          const data = await suiRes.json();
+          const price = parseFloat(data.price);
+          if (price > 0) {
+            prices.SUI = price;
+            prices.HASUI = price * 1.025; // Staked SUI carries accumulated rewards premiums
+          }
+        }
+      } catch (e) {
+        console.warn('[RPC Service] Failed to fetch live SUI price, using default:', prices.SUI);
+      }
+
+      // Fetch CETUS/USDT
+      try {
+        const cetusRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=CETUSUSDT');
+        if (cetusRes.ok) {
+          const data = await cetusRes.json();
+          const price = parseFloat(data.price);
+          if (price > 0) prices.CETUS = price;
+        }
+      } catch (e) {
+        console.warn('[RPC Service] Failed to fetch live CETUS price, using default:', prices.CETUS);
+      }
+
+      // Fetch DEEP/USDT
+      try {
+        const deepRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=DEEPUSDT');
+        if (deepRes.ok) {
+          const data = await deepRes.json();
+          const price = parseFloat(data.price);
+          if (price > 0) prices.DEEP = price;
+        }
+      } catch (e) {
+        console.warn('[RPC Service] Failed to fetch live DEEP price, using default:', prices.DEEP);
+      }
+
+      console.log(`[RPC Service Success] Loaded rates: SUI=$${prices.SUI.toFixed(3)}, CETUS=$${prices.CETUS.toFixed(3)}, DEEP=$${prices.DEEP.toFixed(3)}`);
+    } catch (err) {
+      console.error('[RPC Service Price Query Error] Using static preset rates fallbacks:', err);
+    }
+
+    return prices;
+  }
+
+  /**
+   * Retrieves Sui Wallet balance, natively staked validator reserves, transaction activity and smart contracts interaction logs.
+   * Leverages Tatum RPC endpoint gateway or falls back to standard public Sui Mainnet fullnode.
    */
   static async getWalletData(
     address: string,
     simulateMode: boolean,
     tatumApiKey: string
   ): Promise<WalletData> {
-    const formattedAddress = address.trim().toLowerCase();
+    let targetAddress = address.trim().toLowerCase();
+    
+    // Resolve standard preset names
+    const nameMap: Record<string, string> = {
+      'suilens.sui': '0x7a8109d9f10be280b2a7582eb7bc3696f018888a',
+      'degentrader.sui': '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a',
+      'yieldfarmer.sui': '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd'
+    };
+    if (nameMap[targetAddress]) {
+      targetAddress = nameMap[targetAddress];
+    }
 
-    // If simulation is enabled or no credentials provided, resolve via mock database
-    if (simulateMode || !tatumApiKey) {
+    const formattedAddress = targetAddress;
+
+    // If simulation is explicitly enabled, resolve via mock database
+    if (simulateMode) {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 800));
       
@@ -27,37 +102,53 @@ export class TatumService {
       return walletData;
     }
 
-    // Real Tatum RPC Query implementation (Live mode)
+    // Real RPC Query implementation (Live mode)
     try {
-      console.log(`[Tatum RPC] Querying ledger entries for ${address} via mainnet gateway...`);
+      console.log(`[RPC Service] Querying ledger entries for ${targetAddress} via Sui Mainnet...`);
+      
+      // Fetch dynamic real-time market spot rates
+      const livePrices = await TatumService.getRealTimePrices();
+
+      const isTatumActive = tatumApiKey && !tatumApiKey.includes('placeholder') && tatumApiKey.trim() !== '';
+      const rpcUrl = isTatumActive 
+        ? 'https://api.tatum.io/v3/blockchain/node/sui-mainnet' 
+        : 'https://fullnode.mainnet.sui.io:443';
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (isTatumActive) {
+        headers['x-api-key'] = tatumApiKey;
+        console.log('[RPC Service] Querying via Tatum RPC Endpoint Gateway with credentials.');
+      } else {
+        console.log('[RPC Service] Querying via official public Sui Mainnet fullnode RPC (no API key required).');
+      }
       
       // Setup known token decimals and mock price list for premium layout rendering
       const tokenConfig: Record<string, { symbol: string; name: string; decimals: number; priceUSD: number; color: string }> = {
-        '0x2::sui::SUI': { symbol: 'SUI', name: 'Sui Network', decimals: 9, priceUSD: 2.50, color: '#00d1ff' },
-        '0xbde4b8c5417614ec7b16a0487cd238d38a06e9b88d8b67f10b7b67b10c598000::hasui::HASUI': { symbol: 'haSUI', name: 'Haedal Liquid Staked SUI', decimals: 9, priceUSD: 2.70, color: '#8b5cf6' },
-        '0x06864a6f92180486093006bb16695ad61a4e305e72d733a464ef028e3b5e4000::cetus::CETUS': { symbol: 'CETUS', name: 'Cetus Token', decimals: 9, priceUSD: 1.30, color: '#6fe7ff' },
+        '0x2::sui::SUI': { symbol: 'SUI', name: 'Sui Network', decimals: 9, priceUSD: livePrices.SUI, color: '#00d1ff' },
+        '0xbde4b8c5417614ec7b16a0487cd238d38a06e9b88d8b67f10b7b67b10c598000::hasui::HASUI': { symbol: 'haSUI', name: 'Haedal Liquid Staked SUI', decimals: 9, priceUSD: livePrices.HASUI, color: '#8b5cf6' },
+        '0x06864a6f92180486093006bb16695ad61a4e305e72d733a464ef028e3b5e4000::cetus::CETUS': { symbol: 'CETUS', name: 'Cetus Token', decimals: 9, priceUSD: livePrices.CETUS, color: '#6fe7ff' },
         '0x5d168e3b0e1eefbb916298efba75c8bb90d1800000000000000000000000000::usdc::USDC': { symbol: 'USDC', name: 'USD Coin', decimals: 6, priceUSD: 1.00, color: '#10b981' },
-        '0xde9::deep::DEEP': { symbol: 'DEEP', name: 'DeepBook Token', decimals: 9, priceUSD: 0.32, color: '#f59e0b' }
+        '0xde9::deep::DEEP': { symbol: 'DEEP', name: 'DeepBook Token', decimals: 9, priceUSD: livePrices.DEEP, color: '#f59e0b' }
       };
 
-      // 1. Retrieve all balances via suix_getAllBalances
-      console.log(`[Tatum RPC] Fetching suix_getAllBalances...`);
-      const balanceResponse = await fetch('https://api.tatum.io/v3/blockchain/node/sui-mainnet', {
+      // 1. Retrieve all standard balances via suix_getAllBalances
+      console.log(`[RPC Service] Fetching suix_getAllBalances...`);
+      const balanceResponse = await fetch(rpcUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': tatumApiKey
-        },
+        headers,
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           method: 'suix_getAllBalances',
-          params: [address]
+          params: [targetAddress]
         })
       });
 
       if (!balanceResponse.ok) {
-        throw new Error(`Tatum gateway suix_getAllBalances failed: ${balanceResponse.statusText}`);
+        throw new Error(`RPC gateway suix_getAllBalances failed: ${balanceResponse.statusText}`);
       }
 
       const balanceData = await balanceResponse.json();
@@ -82,12 +173,36 @@ export class TatumService {
           const parts = coinType.split('::');
           const symbol = parts[parts.length - 1].toUpperCase();
           const name = parts[parts.length - 1] + ' Token';
+          
+          let decimals = 9;
+          let priceUSD = 0.00;
+          let color = '#8b5cf6';
+          
+          // Symbol-based smart detection (supports native, Wormhole-bridged, and wrapped types automatically)
+          if (symbol.includes('USDC')) {
+            decimals = 6;
+            priceUSD = 1.00;
+            color = '#10b981';
+          } else if (symbol.includes('USDT')) {
+            decimals = 6;
+            priceUSD = 1.00;
+            color = '#10b981';
+          } else if (symbol === 'WAL') {
+            decimals = 9;
+            priceUSD = 0.10; // estimate Walrus price
+            color = '#8b5cf6';
+          } else if (symbol === 'NS') {
+            decimals = 9;
+            priceUSD = 0.08; // Sui NS token price
+            color = '#60a5fa';
+          }
+          
           config = {
             symbol,
             name,
-            decimals: 9,
-            priceUSD: 0.50, // default fallback price
-            color: '#8b5cf6'
+            decimals,
+            priceUSD,
+            color
           };
         }
 
@@ -105,6 +220,53 @@ export class TatumService {
         });
       }
 
+      // 1B. Retrieve natively staked validator SUI via suix_getStakes
+      console.log(`[RPC Service] Fetching native validator stakes via suix_getStakes...`);
+      let nativeStakedMIST = 0;
+      try {
+        const stakesResponse = await fetch(rpcUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'suix_getStakes',
+            params: [targetAddress]
+          })
+        });
+
+        if (stakesResponse.ok) {
+          const stakesData = await stakesResponse.json();
+          const stakesList = stakesData?.result || [];
+          
+          for (const stakeObj of stakesList) {
+            const stakes = stakeObj.stakes || [];
+            for (const s of stakes) {
+              const principal = parseFloat(s.principal) || 0;
+              const reward = parseFloat(s.estimatedReward) || 0;
+              nativeStakedMIST += (principal + reward);
+            }
+          }
+        }
+      } catch (stakeErr) {
+        console.error('[RPC Service] Failed to retrieve native stakes:', stakeErr);
+      }
+
+      const nativeStakedSUI = nativeStakedMIST / 1000000000; // 9 decimals
+      if (nativeStakedSUI > 0) {
+        console.log(`[RPC Service] Detected ${nativeStakedSUI.toFixed(3)} Natively Staked SUI.`);
+        const stakedValueUSD = nativeStakedSUI * livePrices.SUI;
+        totalPortfolioValue += stakedValueUSD;
+        tokenAllocations.push({
+          symbol: "Staked SUI",
+          name: "Natively Staked SUI",
+          balance: nativeStakedSUI,
+          valueUSD: parseFloat(stakedValueUSD.toFixed(2)),
+          percentage: 0,
+          color: "#3ab0ff" // Sleek sky blue color
+        });
+      }
+
       // Recalculate percentages
       if (totalPortfolioValue > 0) {
         tokenAllocations = tokenAllocations.map(tok => ({
@@ -113,9 +275,9 @@ export class TatumService {
         }));
       } else {
         // Fallback to SUI default if wallet has 0 assets or empty balance
-        totalPortfolioValue = 25.00;
+        totalPortfolioValue = 0.00;
         tokenAllocations = [
-          { symbol: "SUI", name: "Sui Network", balance: 10, valueUSD: 25.00, percentage: 100, color: "#00d1ff" }
+          { symbol: "SUI", name: "Sui Network", balance: 0, valueUSD: 0.00, percentage: 0, color: "#00d1ff" }
         ];
       }
 
@@ -123,19 +285,16 @@ export class TatumService {
       tokenAllocations.sort((a, b) => b.valueUSD - a.valueUSD);
 
       // 2. Retrieve owned objects to analyze protocol exposures via suix_getOwnedObjects
-      console.log(`[Tatum RPC] Fetching suix_getOwnedObjects...`);
-      const objectsResponse = await fetch('https://api.tatum.io/v3/blockchain/node/sui-mainnet', {
+      console.log(`[RPC Service] Fetching suix_getOwnedObjects...`);
+      const objectsResponse = await fetch(rpcUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': tatumApiKey
-        },
+        headers,
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 2,
           method: 'suix_getOwnedObjects',
           params: [
-            address,
+            targetAddress,
             {
               options: {
                 showType: true,
@@ -178,10 +337,10 @@ export class TatumService {
           severity: "low"
         });
       }
-      if (hasLiquidStaking) {
+      if (hasLiquidStaking || nativeStakedSUI > 0) {
         riskIndicators.push({
-          title: "Liquid Staking Participation",
-          description: "Staked SUI derivative objects detected. Demonstrates strategic capital efficiency.",
+          title: "Liquid/Native Staking Participation",
+          description: "Active SUI staking deposits detected. Demonstrates secure validator routing.",
           severity: "low"
         });
       }
@@ -215,14 +374,11 @@ export class TatumService {
       const calculatedScamExposure = Math.min(suspiciousObjectsCount * 25, 95);
 
       // 3. Dissect standard Move functions via sui_getNormalizedMoveFunction
-      console.log(`[Tatum RPC] Dissecting normalized Move function sui_getNormalizedMoveFunction...`);
+      console.log(`[RPC Service] Dissecting normalized Move function sui_getNormalizedMoveFunction...`);
       try {
-        const moveResponse = await fetch('https://api.tatum.io/v3/blockchain/node/sui-mainnet', {
+        const moveResponse = await fetch(rpcUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': tatumApiKey
-          },
+          headers,
           body: JSON.stringify({
             jsonrpc: '2.0',
             id: 3,
@@ -238,19 +394,19 @@ export class TatumService {
         if (moveResponse.ok) {
           const moveData = await moveResponse.json();
           if (moveData?.result) {
-            console.log(`[Tatum RPC Success] Dissected 0xdee9::clob_v2::place_market_order Move function successfully.`);
+            console.log(`[RPC Service Success] Dissected 0xdee9::clob_v2::place_market_order Move function successfully.`);
           }
         }
       } catch (moveErr) {
-        console.error('[Tatum RPC Move Dissection Failure] Skipping move validation:', moveErr);
+        console.error('[RPC Service Move Dissection Failure] Skipping move validation:', moveErr);
       }
 
       // Generate a dynamic personality summary based on live metrics
-      const personality = `${totalPortfolioValue > 100000 ? 'Smart Money Whale' : 'Active Onchain User'} (Tatum RPC Dissected)`;
-      const summaryProfessional = `This wallet's actual live holdings have been verified via Tatum RPC ledger scans. Total portfolio value is $${totalPortfolioValue.toLocaleString(undefined, {maximumFractionDigits: 2})} USD spread across ${tokenAllocations.length} distinct token positions. Owned objects registry check confirms ${hasLendingExposure ? 'active DeFi lending exposure' : 'minimal leverage'} and ${hasLiquidStaking ? 'liquid staked asset participation' : 'no liquid staking exposure'}.`;
+      const personality = `${totalPortfolioValue > 100000 ? 'Smart Money Whale' : 'Active Onchain User'} (RPC Ledger Scan)`;
+      const summaryProfessional = `This wallet's actual live holdings have been verified via Sui Mainnet RPC ledger scans. Total portfolio value is $${totalPortfolioValue.toLocaleString(undefined, {maximumFractionDigits: 2})} USD spread across ${tokenAllocations.length} distinct token positions. Owned objects registry check confirms ${hasLendingExposure ? 'active DeFi lending exposure' : 'minimal leverage'} and ${hasLiquidStaking || nativeStakedSUI > 0 ? 'staked asset participation' : 'no staking exposure'}.`;
 
       return {
-        address,
+        address: targetAddress,
         portfolioValueUSD: parseFloat(totalPortfolioValue.toFixed(2)),
         riskScore: calculatedRiskScore,
         smartMoneyScore: totalPortfolioValue > 50000 ? 88 : 45,
@@ -264,14 +420,14 @@ export class TatumService {
         confidenceScore: 99,
         tokenAllocations,
         activityTimeline: [
-          { id: "tx-live-1", type: "contract_call", amountUSD: 0, timestamp: new Date().toISOString(), status: "success", hash: "0x_rpc_verified_tx_hash", interactedWith: "Verified Tatum Node Entry", isSuspicious: false }
+          { id: "tx-live-1", type: "contract_call", amountUSD: 0, timestamp: new Date().toISOString(), status: "success", hash: "0x_rpc_verified_tx_hash", interactedWith: "Verified Sui Mainnet Node Entry", isSuspicious: false }
         ],
         riskIndicators
       };
     } catch (err) {
-      console.error('[Tatum Service Error] Critical live failure, falling back to mock database:', err);
+      console.error('[RPC Service Error] Critical live failure, falling back to mock database:', err);
       // Clean fallback if anything crashes or key is rejected
-      let walletData = mockWallets[formattedAddress] || generateMockWallet(address);
+      let walletData = mockWallets[formattedAddress] || generateMockWallet(targetAddress);
       return {
         ...walletData,
         personality: `${walletData.personality} (Mock Fallback - RPC Error)`

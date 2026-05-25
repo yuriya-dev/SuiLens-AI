@@ -73,9 +73,9 @@ export interface SavedAnalysis {
 
 // Global server memory state representing decentralized DB snapshots
 export const serverSavedAnalyses: SavedAnalysis[] = [
-  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: new Date().toISOString(), riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
-  { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: new Date().toISOString(), riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
-  { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: new Date().toISOString(), riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
+  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: new Date().toISOString(), riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
+  { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: new Date().toISOString(), riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
+  { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: new Date().toISOString(), riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
 ];
 
 export const serverWhaleFeed: WhaleFeedItem[] = [
@@ -254,5 +254,33 @@ export const generateMockWallet = (address: string): WalletData => {
     riskIndicators: [
       { title: "Standard Protocol Usage", description: "Interacts primarily with main-tier DeFi primitives.", severity: calculatedRisk > 60 ? "medium" : "low" }
     ]
+  };
+};
+
+export const generateRandomWhaleTx = (): WhaleFeedItem => {
+  const tokens = ["SUI", "haSUI", "CETUS", "BUCK", "USDC", "FROG", "DEEP"];
+  const selectedToken = tokens[Math.floor(Math.random() * tokens.length)];
+  const amount = Math.floor(Math.random() * 80000) + 5000;
+  
+  let rate = 1.0;
+  if (selectedToken === "SUI" || selectedToken === "haSUI") rate = 2.5;
+  else if (selectedToken === "CETUS") rate = 1.3;
+  else if (selectedToken === "DEEP") rate = 0.32;
+  else if (selectedToken === "FROG") rate = 0.0003;
+  
+  const valueUSD = amount * rate;
+  const isSuspicious = selectedToken === "FROG" || Math.random() > 0.85;
+
+  return {
+    id: `w-rand-${Math.random().toString(36).slice(2, 9)}`,
+    sender: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`,
+    receiver: Math.random() > 0.5 ? "DEX Aggregator" : `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`,
+    amount,
+    token: selectedToken,
+    amountUSD: Math.round(valueUSD * 100) / 100,
+    type: Math.random() > 0.4 ? "swap" : "transfer",
+    timestamp: new Date().toISOString(),
+    hash: `0x${Math.random().toString(16).slice(2, 10)}...hash`,
+    isSuspicious
   };
 };

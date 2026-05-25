@@ -11,8 +11,8 @@ const queryClient = new QueryClient();
 
 // Configure networks using standard mainnet/testnet HTTP endpoints
 const { networkConfig } = createNetworkConfig({
-  mainnet: { url: 'https://fullnode.mainnet.sui.io:443' },
-  testnet: { url: 'https://fullnode.testnet.sui.io:443' },
+  mainnet: { url: 'https://fullnode.mainnet.sui.io:443', network: 'mainnet' },
+  testnet: { url: 'https://fullnode.testnet.sui.io:443', network: 'testnet' },
 });
 
 // A helper component to synchronize the real connected wallet address back into Zustand global state.

@@ -272,7 +272,7 @@ export const generateRandomWhaleTx = (): WhaleFeedItem => {
 // ----------------------------------------------------
 
 export const initialSavedAnalyses: SavedAnalysis[] = [
-  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: "2026-05-24T18:12:00Z", riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
-  { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: "2026-05-24T18:45:00Z", riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
-  { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: "2026-05-24T10:15:00Z", riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "https://aggregator.walrus-testnet.walrus.space/v1/blobs/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
+  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: "2026-05-24T18:12:00Z", riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
+  { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: "2026-05-24T18:45:00Z", riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
+  { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: "2026-05-24T10:15:00Z", riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
 ];

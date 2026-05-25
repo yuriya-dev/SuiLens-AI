@@ -18,7 +18,8 @@ import {
   Brain,
   Smile,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Download
 } from 'lucide-react';
 import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -195,9 +196,16 @@ export default function WalletAnalysis() {
           <div className="flex gap-4 pt-6 mt-4 border-t border-white/5">
             <button 
               onClick={() => router.push(`/chat?address=${currentWalletData.address}`)}
-              className="flex-1 bg-gradient-to-r from-cyan-glow to-sui-blue hover:from-sui-blue hover:to-cyan-glow text-[#050816] font-display font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer text-center"
+              className="flex-1 bg-white/2 hover:bg-white/5 border border-white/5 text-white font-display font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer text-center"
             >
               Ask AI Follow-Up Questions
+            </button>
+            <button 
+              onClick={() => router.push(`/reports?address=${currentWalletData.address}&download=true`)}
+              className="flex-1 bg-gradient-to-r from-cyan-glow to-sui-blue hover:from-sui-blue hover:to-cyan-glow text-[#050816] font-display font-bold text-xs uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download PDF Brief
             </button>
           </div>
         </div>

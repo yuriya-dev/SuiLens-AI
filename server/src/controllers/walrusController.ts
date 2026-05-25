@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { serverSavedAnalyses, generateMockWallet, mockWallets } from '../services/mockDb';
 
 /**
  * Retrieves a published JSON report directly from the public Walrus Aggregator gateway.
@@ -7,6 +8,24 @@ export const getWalrusBlobController = async (req: Request, res: Response) => {
   const { blobId } = req.params;
   if (!blobId) {
     return res.status(400).json({ error: 'Blob ID parameter is required.' });
+  }
+
+  // Intercept mock/simulated blob IDs
+  if (blobId.startsWith('walrus-blob-')) {
+    console.log(`[Walrus Gateway Mock Interceptor] Intercepted mock blobId: ${blobId}`);
+    
+    // Find the saved analysis in local memory to retrieve the associated address
+    const saved = serverSavedAnalyses.find(a => a.blobId === blobId);
+    const targetAddress = saved?.address || '0x7a8109d9f10be280b2a7582eb7bc3696f018888a'; // fallback address
+    
+    // Get or generate target wallet data
+    const walletData = mockWallets[targetAddress.toLowerCase()] || generateMockWallet(targetAddress);
+    
+    return res.json({
+      blobId,
+      gatewayUrl: `http://localhost:${process.env.PORT || 3001}/api/walrus/blob/${blobId}`,
+      data: walletData
+    });
   }
 
   try {

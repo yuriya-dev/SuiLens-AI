@@ -24,13 +24,29 @@ export default function WhaleTracker() {
     fetchWhales();
   }, [fetchWhales]);
 
-  // Trigger live simulated transactions in the background
+  // Connect live to the backend Server-Sent Events (SSE) transaction stream
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newTx = generateRandomWhaleTx();
-      addWhaleTx(newTx);
-    }, 7000);
-    return () => clearInterval(interval);
+    console.log('[Whale Tracker] Connecting to real-time transaction stream...');
+    const eventSource = new EventSource('http://localhost:3001/api/whales/stream');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const tx = JSON.parse(event.data);
+        console.log(`[Whale Tracker] Incoming transfer: $${tx.amountUSD.toLocaleString()} USD`);
+        addWhaleTx(tx);
+      } catch (err) {
+        console.error('[Whale Tracker] Fail parsing stream transaction:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('[Whale Tracker] EventSource stream connection error:', err);
+    };
+
+    return () => {
+      console.log('[Whale Tracker] Closing real-time transaction stream.');
+      eventSource.close();
+    };
   }, [addWhaleTx]);
 
   const filteredFeed = filterSuspicious 

@@ -61,9 +61,9 @@ export const useStore = create<AppState>((set, get) => ({
   isAnalyzing: false,
 
   // Default API configuration
-  simulateMode: true,
+  simulateMode: false,
   tatumApiKey: '',
-  walrusPublisher: 'https://publisher.walrus.storage',
+  walrusPublisher: 'https://publisher.walrus-testnet.walrus.space',
   openaiApiKey: '',
 
   connectWallet: (address) => set({ connectedWallet: address }),

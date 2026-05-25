@@ -12,12 +12,16 @@ import {
 import { 
   getWalrusBlobController 
 } from '../controllers/walrusController';
+import { 
+  getWhaleStreamController 
+} from '../controllers/whaleStreamController';
 
 const router = Router();
 
 router.post('/analyze', analyzeWalletController);
 router.get('/history', historyController);
 router.get('/whales', whalesController);
+router.get('/whales/stream', getWhaleStreamController);
 router.post('/chat', chatController);
 
 // Cryptographic Wallet Authentication

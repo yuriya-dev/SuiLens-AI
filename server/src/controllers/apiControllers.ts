@@ -3,6 +3,7 @@ import { TatumService } from '../services/tatumService';
 import { WalrusService } from '../services/walrusService';
 import { AIService } from '../services/aiService';
 import { serverWhaleFeed, generateMockWallet, mockWallets } from '../services/mockDb';
+import { prisma, isDbActive } from '../services/dbService';
 
 // Validate address inputs using Regex patterns for Sui standards (supports 40-char demo, 64-char standard addresses, and package::module::struct token types)
 const validateSuiAddress = (addr: string): boolean => {
@@ -52,11 +53,31 @@ export const analyzeWalletController = async (req: Request, res: Response) => {
   }
 };
 
-export const historyController = (req: Request, res: Response) => {
+export const historyController = async (req: Request, res: Response) => {
   try {
-    const historyList = WalrusService.getHistory();
-    return res.json(historyList);
+    if (isDbActive) {
+      console.log('[Database] Fetching report snapshots from Supabase Postgres...');
+      const dbHistory = await prisma.report.findMany({
+        orderBy: { timestamp: 'desc' }
+      });
+      
+      const historyList = dbHistory.map((r: any) => ({
+        address: r.address,
+        timestamp: r.timestamp.toISOString(),
+        riskScore: r.riskScore,
+        blobId: r.blobId,
+        walrusUrl: r.blobId.startsWith('walrus-blob-')
+          ? `http://localhost:${process.env.PORT || 3001}/api/walrus/blob/${r.blobId}`
+          : `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${r.blobId}`,
+        sizeBytes: r.sizeBytes
+      }));
+      return res.json(historyList);
+    } else {
+      const historyList = WalrusService.getHistory();
+      return res.json(historyList);
+    }
   } catch (err: any) {
+    console.error('[History Controller Error]', err);
     return res.status(500).json({ error: 'Failed to fetch history logs.' });
   }
 };
@@ -96,6 +117,38 @@ export const chatController = async (req: Request, res: Response) => {
       openaiApiKey,
       null
     );
+
+    // Save logs to Supabase if database is active
+    if (isDbActive) {
+      try {
+        console.log(`[Database] Logging user and assistant messages for ${address} in Postgres...`);
+        const cleanAddress = address.toLowerCase();
+        
+        await prisma.user.upsert({
+          where: { address: cleanAddress },
+          update: {},
+          create: { address: cleanAddress }
+        });
+
+        await prisma.chat.create({
+          data: {
+            address: cleanAddress,
+            role: 'user',
+            content: prompt
+          }
+        });
+
+        await prisma.chat.create({
+          data: {
+            address: cleanAddress,
+            role: 'assistant',
+            content: aiText
+          }
+        });
+      } catch (dbErr) {
+        console.error('[Database Error] Failed to persist chat log in Postgres:', dbErr);
+      }
+    }
 
     return res.json({ content: aiText });
   } catch (err: any) {
