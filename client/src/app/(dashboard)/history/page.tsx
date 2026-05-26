@@ -10,7 +10,6 @@ import {
   ExternalLink,
   ChevronRight,
   ChevronLeft,
-  ShieldAlert,
   Calendar
 } from 'lucide-react';
 import Link from 'next/link';
@@ -29,16 +28,12 @@ export default function WalrusHistory() {
     item.address.toLowerCase().includes(filterQuery.toLowerCase())
   );
 
-  // Reset page to 1 when search query or items per page change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterQuery, itemsPerPage]);
-
   const totalPages = Math.ceil(filteredAnalyses.length / itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
 
   const paginatedAnalyses = filteredAnalyses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage
   );
 
   return (
@@ -61,7 +56,10 @@ export default function WalrusHistory() {
             type="text" 
             placeholder="Search address..."
             value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
+            onChange={(e) => {
+              setFilterQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full bg-[#0b1220]/60 border border-white/10 group-hover:border-cyan-glow/50 focus:border-cyan-glow text-white text-xs pl-9 pr-4 py-2 rounded-xl outline-none transition-all"
           />
           <Search className="w-3.5 h-3.5 text-white/30 group-focus-within:text-cyan-glow absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -143,7 +141,7 @@ export default function WalrusHistory() {
                 <div className="text-xs text-white/40">
                   Showing <span className="text-cyan-glow font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
                   <span className="text-cyan-glow font-bold">
-                    {Math.min(currentPage * itemsPerPage, filteredAnalyses.length)}
+                    {Math.min(safeCurrentPage * itemsPerPage, filteredAnalyses.length)}
                   </span>{' '}
                   of <span className="text-white/70 font-semibold">{filteredAnalyses.length}</span> archives
                 </div>
@@ -152,7 +150,7 @@ export default function WalrusHistory() {
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
+                    disabled={safeCurrentPage === 1}
                     className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 text-white/60 hover:text-cyan-glow hover:border-cyan-glow/40 bg-white/2 hover:bg-cyan-glow/5 transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                     title="Previous Page"
                   >
@@ -181,7 +179,7 @@ export default function WalrusHistory() {
                       return null;
                     }
 
-                    const isActive = currentPage === pageNumber;
+                    const isActive = safeCurrentPage === pageNumber;
                     return (
                       <button
                         key={pageNumber}
@@ -201,7 +199,7 @@ export default function WalrusHistory() {
 
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
+                    disabled={safeCurrentPage === totalPages}
                     className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 text-white/60 hover:text-cyan-glow hover:border-cyan-glow/40 bg-white/2 hover:bg-cyan-glow/5 transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
                     title="Next Page"
                   >
@@ -214,7 +212,10 @@ export default function WalrusHistory() {
                   <span className="text-[10px] uppercase font-display font-semibold tracking-wider text-white/30">Limit</span>
                   <select
                     value={itemsPerPage}
-                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
                     className="bg-[#0b1220] border border-white/10 text-white/70 text-xs rounded-lg px-2.5 py-1.5 focus:border-cyan-glow outline-none cursor-pointer transition-colors"
                   >
                     <option value={5}>5 per page</option>

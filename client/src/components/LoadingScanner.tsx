@@ -3,27 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { Cpu, Terminal } from 'lucide-react';
 
+const STEPS = [
+  { text: 'Establishing secure Tatum RPC channel to Sui Mainnet...', status: 'success' },
+  { text: 'Extracting historical ledger entries (500 blocks scanned)...', status: 'success' },
+  { text: 'Compiling token allocation ratios and protocol dependencies...', status: 'success' },
+  { text: 'Evaluating behavioral risk triggers and whale connections...', status: 'success' },
+  { text: 'Assembling dataset & publishing immutable proof to Walrus DB...', status: 'success' },
+  { text: 'Synthesizing report via SuiLens AI Copilot Engine...', status: 'success' }
+] as const;
+
 export default function LoadingScanner() {
   const [activeStep, setActiveStep] = useState(0);
-  const [stepTimes, setStepTimes] = useState<string[]>([]);
-
-  const steps = [
-    { text: 'Establishing secure Tatum RPC channel to Sui Mainnet...', status: 'success' },
-    { text: 'Extracting historical ledger entries (500 blocks scanned)...', status: 'success' },
-    { text: 'Compiling token allocation ratios and protocol dependencies...', status: 'success' },
-    { text: 'Evaluating behavioral risk triggers and whale connections...', status: 'success' },
-    { text: 'Assembling dataset & publishing immutable proof to Walrus DB...', status: 'success' },
-    { text: 'Synthesizing report via SuiLens AI Copilot Engine...', status: 'success' }
-  ];
+  const [stepTimes, setStepTimes] = useState<string[]>(() => [new Date().toLocaleTimeString()]);
 
   useEffect(() => {
-    // Record the first step time on mount (client-side only)
-    setStepTimes([new Date().toLocaleTimeString()]);
-
     // Progressively step through the logs
     const interval = setInterval(() => {
       setActiveStep((prev) => {
-        if (prev < steps.length - 1) {
+        if (prev < STEPS.length - 1) {
           const nextStep = prev + 1;
           setStepTimes((prevTimes) => {
             const newTimes = [...prevTimes];
@@ -66,7 +63,7 @@ export default function LoadingScanner() {
           <span>CONSOLE TELEMETRY FEED (SUI-RPC-01)</span>
         </div>
         
-        {steps.map((step, idx) => {
+        {STEPS.map((step, idx) => {
           if (idx > activeStep) return null;
           
           return (

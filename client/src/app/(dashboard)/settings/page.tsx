@@ -4,12 +4,9 @@ import React, { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { 
   Settings, 
-  Cpu, 
-  Database, 
   Key, 
   Sliders, 
   Save, 
-  HelpCircle,
   ShieldCheck
 } from 'lucide-react';
 

@@ -3,15 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
-import { generateRandomWhaleTx } from '@/lib/mockData';
 import { 
   Waves, 
   Activity, 
   TrendingUp, 
   ShieldAlert, 
-  CornerDownRight, 
   ExternalLink,
-  ChevronRight,
   UserCheck
 } from 'lucide-react';
 

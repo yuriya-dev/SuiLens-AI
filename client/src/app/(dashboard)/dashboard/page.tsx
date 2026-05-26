@@ -8,14 +8,11 @@ import {
   TrendingDown, 
   Cpu, 
   Activity, 
-  AlertTriangle, 
   ExternalLink,
   ChevronRight,
   Shield,
-  Eye,
   Download
 } from 'lucide-react';
-import { generateRandomWhaleTx } from '@/lib/mockData';
 
 export default function MainDashboard() {
   const { 

@@ -2,29 +2,31 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '@/store/useStore';
-import RiskScoreRing from '@/components/RiskScoreRing';
 import LoadingScanner from '@/components/LoadingScanner';
 import WalrusStorageBadge from '@/components/WalrusStorageBadge';
 import { 
   Shield, 
   TrendingUp, 
   Coins, 
-  ChevronRight,
   Brain,
   Download,
   Copy,
   Database,
   Send,
-  User,
   Bot,
   Cpu,
   Sparkles,
-  ArrowRight,
-  HelpCircle,
   MessageSquare
 } from 'lucide-react';
 import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
 import Link from 'next/link';
+
+const EMPTY_MESSAGES: Array<{ id: string; role: 'user' | 'assistant'; content: string; timestamp: string }> = [];
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return 'AI Copilot suffered a reasoning lapse. Please try again.';
+};
 
 // Sleek lightweight React Markdown segment compiler
 function MarkdownText({ content }: { content: string }) {
@@ -123,7 +125,11 @@ export default function MyPortfolioPage() {
   }, [connectedWallet, currentWalletData, analyzeWallet]);
 
   // Scroll AI Chat to bottom
-  const messages = connectedWallet ? (chatThreads[connectedWallet.toLowerCase()] || []) : [];
+  const messages = React.useMemo(() => {
+    if (!connectedWallet) return EMPTY_MESSAGES;
+    return chatThreads[connectedWallet.toLowerCase()] ?? EMPTY_MESSAGES;
+  }, [connectedWallet, chatThreads]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isReplying]);
@@ -174,9 +180,9 @@ export default function MyPortfolioPage() {
 
     try {
       await addChatMessage(connectedWallet.toLowerCase(), { role: 'user', content: queryText });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || 'AI Copilot suffered a reasoning lapse. Please try again.');
+      alert(getErrorMessage(err));
     } finally {
       setIsReplying(false);
     }
@@ -190,7 +196,6 @@ export default function MyPortfolioPage() {
   // Mock yields and DeFi variables calculated for layouts
   const totalStakedSui = currentWalletData.tokenAllocations.find(t => t.symbol.includes('Staked'))?.balance || 0;
   const isStakingActive = totalStakedSui > 0;
-  const isLendingActive = currentWalletData.riskIndicators.some(r => r.title.includes('Lending'));
 
   return (
     <div className="space-y-8 text-left">
@@ -513,7 +518,7 @@ export default function MyPortfolioPage() {
                 <div className="space-y-1">
                   <p className="font-display font-bold text-white text-xs">Ask anything about your assets</p>
                   <p className="font-sans text-white/40 leading-relaxed text-[11px]">
-                    "How can I optimize my haSUI staking rewards?" or "Show my DeFi risk exposures in Navi."
+                    &quot;How can I optimize my haSUI staking rewards?&quot; or &quot;Show my DeFi risk exposures in Navi.&quot;
                   </p>
                 </div>
               </div>

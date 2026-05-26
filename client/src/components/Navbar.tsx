@@ -8,11 +8,14 @@ import { ConnectModal, useCurrentAccount, useDisconnectWallet, useSignPersonalMe
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
 export default function Navbar() {
   const router = useRouter();
   const { 
-    connectedWallet, 
-    analyzeWallet, 
     isAnalyzing,
     isWalletVerified,
     isVerifyingWallet,
@@ -135,8 +138,8 @@ export default function Navbar() {
     if (!account) return;
     try {
       await verifyWallet(account.address, signPersonalMessage);
-    } catch (err: any) {
-      alert(`Wallet cryptographic verification failed: ${err.message || err}`);
+    } catch (err: unknown) {
+      alert(`Wallet cryptographic verification failed: ${getErrorMessage(err)}`);
     }
   };
 

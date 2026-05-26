@@ -163,13 +163,12 @@ export const generateMockWallet = (address: string): WalletData => {
   const hashVal = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const calculatedRisk = (hashVal % 75) + 15; // Generates a stable pseudo-random risk score
   const isSuiName = address.endsWith('.sui');
-  const shortAddress = isSuiName ? address : `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   let personality = "Moderate Multi-Asset Trader";
   let tag = "Active Trader";
   let summaryProfessional = `This wallet demonstrates active, moderate-risk trading habits within the Sui ecosystem. The wallet frequently balances SUI and standard DeFi tokens, with minor meme allocations. There are no critical signs of malicious honeypot creation, but consistent interaction with unverified DEX pairs adds slight systemic risk.`;
   let summaryRoast = `You're the absolute definition of an average retail trader. You're too scared to go full degen on microcaps, but too impatient to just hold SUI and earn staking yields. You buy things after they've pumped 20% and sell them at a 5% loss when you get bored. An average mid-wit wallet.`;
-  let summaryExplainLike5 = `This wallet belongs to an ordinary digital storekeeper. They buy different types of digital fruits and sell them a few days later, hoping to make a tiny bit of profit. They are not extremely rich, but they are very careful not to lose all their toys.`;
+  const summaryExplainLike5 = `This wallet belongs to an ordinary digital storekeeper. They buy different types of digital fruits and sell them a few days later, hoping to make a tiny bit of profit. They are not extremely rich, but they are very careful not to lose all their toys.`;
 
   if (calculatedRisk > 70) {
     personality = "Aggressive Speculative Trader";

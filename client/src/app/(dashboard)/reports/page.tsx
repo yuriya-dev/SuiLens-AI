@@ -3,19 +3,32 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import type { WalletData, SavedAnalysis } from '@/lib/mockData';
 import { 
   FileText, 
   Download, 
   Database, 
   Clock, 
   Cpu, 
-  TrendingUp, 
-  ArrowRight,
-  ChevronRight,
   ShieldCheck
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface MockReportItem extends SavedAnalysis {
+  tag: string;
+  type: string;
+}
+
+const MOCK_REPORT_TIMESTAMPS = {
+  recent: '2026-05-26T10:00:00.000Z',
+  daily: '2026-05-25T12:00:00.000Z',
+  medium: '2026-05-26T07:00:00.000Z'
+} as const;
+
+const isMockReportItem = (item: SavedAnalysis | MockReportItem): item is MockReportItem => {
+  return 'tag' in item && 'type' in item;
+};
 
 export default function PortfolioReports() {
   return (
@@ -43,7 +56,7 @@ function PortfolioReportsContent() {
   }, [fetchHistory]);
 
   // Compile PDF function supporting any WalletData target
-  const triggerPDFDownload = async (walletDataToCompile?: any, customBlobId?: string) => {
+  const triggerPDFDownload = React.useCallback(async (walletDataToCompile?: WalletData, customBlobId?: string) => {
     const targetData = walletDataToCompile || currentWalletData;
     if (!targetData) return;
     
@@ -139,7 +152,7 @@ function PortfolioReportsContent() {
                 </tr>
               </thead>
               <tbody>
-                ${targetData.tokenAllocations.map((tok: any) => `
+                ${targetData.tokenAllocations.map((tok) => `
                   <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.85);">
                     <td style="padding: 8px 5px; font-weight: bold; color: ${tok.color || '#ffffff'}">${tok.symbol} <span style="font-weight: normal; color: rgba(255,255,255,0.4); font-size: 9px;">(${tok.name})</span></td>
                     <td style="padding: 8px 5px; font-family: monospace;">${tok.balance.toLocaleString()}</td>
@@ -155,7 +168,7 @@ function PortfolioReportsContent() {
           <div style="margin-bottom: 25px;">
             <span style="display: block; font-size: 10px; text-transform: uppercase; color: #ef4444; font-weight: bold; letter-spacing: 1.5px; margin-bottom: 10px;">🚨 SYSTEM RISK EXPOSURE SHIELD</span>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              ${targetData.riskIndicators.map((ind: any) => `
+              ${targetData.riskIndicators.map((ind) => `
                 <div style="display: flex; gap: 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 15px; border-radius: 8px; align-items: center;">
                   <span style="font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: ${ind.severity === 'high' ? 'rgba(239, 68, 68, 0.15)' : ind.severity === 'medium' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)'}; border: 1px solid ${ind.severity === 'high' ? 'rgba(239, 68, 68, 0.3)' : ind.severity === 'medium' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}; color: ${ind.severity === 'high' ? '#ef4444' : ind.severity === 'medium' ? '#f59e0b' : '#10b981'}; text-transform: uppercase; min-width: 50px; text-align: center;">${ind.severity}</span>
                   <div style="flex: 1;">
@@ -227,7 +240,7 @@ function PortfolioReportsContent() {
       setIsCompiling(false);
       alert('Failed to compile PDF report. Please verify your client environment and try again.');
     }
-  };
+  }, [currentWalletData, savedAnalyses]);
 
   // Fetch decentralized availability blob and compile A4 PDF
   const handleDownloadHistoryItem = async (blobId: string) => {
@@ -270,7 +283,9 @@ function PortfolioReportsContent() {
         if (download && !isCompiling) {
           // Clear query params to prevent download loops on page refresh
           router.replace('/reports');
-          triggerPDFDownload(currentWalletData);
+          setTimeout(() => {
+            void triggerPDFDownload(currentWalletData);
+          }, 0);
         }
       } else {
         // Trigger loading the wallet
@@ -279,7 +294,9 @@ function PortfolioReportsContent() {
             const data = await analyzeWallet(cleanAddress);
             if (download && !isCompiling) {
               router.replace('/reports');
-              await triggerPDFDownload(data);
+              setTimeout(() => {
+                void triggerPDFDownload(data);
+              }, 0);
             }
           } catch (error) {
             console.error('Failed to load wallet data for PDF compile:', error);
@@ -288,16 +305,16 @@ function PortfolioReportsContent() {
         loadAndTrigger();
       }
     }
-  }, [searchParams, currentWalletData, fetchHistory, analyzeWallet, router, isCompiling]);
+  }, [searchParams, currentWalletData, analyzeWallet, router, isCompiling, triggerPDFDownload]);
 
   // Static fallback presets to display in list if user's Postgres database is fresh/empty
-  const mockReportItems = [
-    { address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), riskScore: 14, blobId: 'walrus-blob-sui-lens-whale-9034', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034', sizeBytes: 15420, tag: 'smartmoney.sui Research Package', type: 'Bluechip Accumulator' },
-    { address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', timestamp: new Date(Date.now() - 3600000 * 24).toISOString(), riskScore: 28, blobId: 'walrus-blob-sui-lens-farmer-5592', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-farmer-5592', sizeBytes: 16212, tag: 'yieldfarmer.sui DeFi Audit', type: 'Stable yield provider' },
-    { address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', timestamp: new Date(Date.now() - 3600000 * 5).toISOString(), riskScore: 88, blobId: 'walrus-blob-sui-lens-degen-4122', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-degen-4122', sizeBytes: 18910, tag: 'degentrader.sui Speculative Audit', type: 'High risk degen' }
-  ];
+  const mockReportItems: MockReportItem[] = React.useMemo(() => [
+    { address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', timestamp: MOCK_REPORT_TIMESTAMPS.recent, riskScore: 14, blobId: 'walrus-blob-sui-lens-whale-9034', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034', sizeBytes: 15420, tag: 'smartmoney.sui Research Package', type: 'Bluechip Accumulator' },
+    { address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', timestamp: MOCK_REPORT_TIMESTAMPS.daily, riskScore: 28, blobId: 'walrus-blob-sui-lens-farmer-5592', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-farmer-5592', sizeBytes: 16212, tag: 'yieldfarmer.sui DeFi Audit', type: 'Stable yield provider' },
+    { address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', timestamp: MOCK_REPORT_TIMESTAMPS.medium, riskScore: 88, blobId: 'walrus-blob-sui-lens-degen-4122', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-degen-4122', sizeBytes: 18910, tag: 'degentrader.sui Speculative Audit', type: 'High risk degen' }
+  ], []);
 
-  const activeReportsList = savedAnalyses.length > 0 ? savedAnalyses : mockReportItems;
+  const activeReportsList: Array<SavedAnalysis | MockReportItem> = savedAnalyses.length > 0 ? savedAnalyses : mockReportItems;
 
   return (
     <div className="space-y-8 text-left max-w-5xl mx-auto">
@@ -411,11 +428,11 @@ function PortfolioReportsContent() {
           {activeReportsList.map((item, idx) => {
             const isMock = !savedAnalyses.length;
             const displayName = isMock 
-              ? (item as any).tag 
+              ? (isMockReportItem(item) ? item.tag : item.address)
               : `Audit Brief: ${item.address.slice(0, 10)}...${item.address.slice(-6)}`;
             
             const displayType = isMock
-              ? (item as any).type
+              ? (isMockReportItem(item) ? item.type : 'Generated Report')
               : item.riskScore < 30 ? 'Low Risk Accumulator' : item.riskScore < 70 ? 'Moderate Active Trader' : 'High Risk Speculator';
             
             const sizeKB = (item.sizeBytes / 1024).toFixed(1) + ' KB';

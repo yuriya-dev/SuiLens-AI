@@ -7,15 +7,18 @@ import {
   Send, 
   Cpu, 
   User, 
-  Database,
-  Terminal,
-  HelpCircle,
-  TrendingUp,
   Brain,
   MessageSquare,
   AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const EMPTY_MESSAGES: Array<{ id: string; role: 'user' | 'assistant'; content: string; timestamp: string }> = [];
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return 'Gagal memproses pesan AI. Silakan periksa kunci API Anda.';
+};
 
 // Sleek lightweight React Markdown segment compiler
 function MarkdownText({ content }: { content: string }) {
@@ -101,26 +104,24 @@ function ChatWindow() {
   } = useStore();
 
   const [input, setInput] = useState('');
-  const [activeAddress, setActiveAddress] = useState('');
+  const [manualAddress, setManualAddress] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
 
-  // Set the default chat focus target
-  useEffect(() => {
-    if (addressParam) {
-      setActiveAddress(addressParam.toLowerCase());
-    } else if (currentWalletData) {
-      setActiveAddress(currentWalletData.address.toLowerCase());
-    } else if (connectedWallet) {
-      setActiveAddress(connectedWallet.toLowerCase());
-    } else {
-      setActiveAddress('');
-    }
-  }, [addressParam, currentWalletData, connectedWallet]);
+  const activeAddress = React.useMemo(() => {
+    if (addressParam) return addressParam.toLowerCase();
+    if (manualAddress) return manualAddress;
+    if (currentWalletData) return currentWalletData.address.toLowerCase();
+    if (connectedWallet) return connectedWallet.toLowerCase();
+    return '';
+  }, [addressParam, manualAddress, currentWalletData, connectedWallet]);
 
   // Retrieve current conversation thread
-  const messages = chatThreads[activeAddress] || [];
+  const messages = React.useMemo(
+    () => chatThreads[activeAddress] ?? EMPTY_MESSAGES,
+    [chatThreads, activeAddress]
+  );
 
   // Scroll to bottom on updates
   useEffect(() => {
@@ -158,10 +159,10 @@ function ChatWindow() {
     try {
       // Direct call to Zustand action which handles User addition, API fetch, and Assistant append
       await addChatMessage(activeAddress, { role: 'user', content: text });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[Copilot Chat Error]', error);
       setToast({
-        message: error.message || 'Gagal memproses pesan AI. Silakan periksa kunci API Anda.',
+        message: getErrorMessage(error),
         type: 'error'
       });
       setTimeout(() => setToast(null), 6000);
@@ -176,7 +177,7 @@ function ChatWindow() {
     if (!address.trim()) return;
     try {
       await analyzeWallet(address);
-      setActiveAddress(address.toLowerCase());
+      setManualAddress(address.toLowerCase());
     } catch (err) {
       console.error(err);
       alert('Failed to analyze the target address. Make sure the backend server is running.');

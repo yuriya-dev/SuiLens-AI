@@ -9,16 +9,13 @@ import WalrusStorageBadge from '@/components/WalrusStorageBadge';
 import { 
   Shield, 
   TrendingUp, 
-  Clock, 
   Activity, 
   Coins, 
-  CornerDownRight, 
   ChevronRight,
   Flame,
   Brain,
   Smile,
   Copy,
-  ExternalLink,
   Download
 } from 'lucide-react';
 import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
@@ -177,7 +174,7 @@ export default function WalletAnalysis() {
                 `}
               >
                 <Smile className="w-3.5 h-3.5" />
-                Explain Like I'm 5
+                Explain Like I&apos;m 5
               </button>
             </div>
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Eye, 
   ArrowRight, 
@@ -11,15 +11,12 @@ import {
   ShieldAlert, 
   Activity, 
   FileText, 
-  CheckCircle,
-  HelpCircle,
-  MessageSquare
+  CheckCircle
 } from 'lucide-react';
 
+const HERO_WORDS = ["Onchain Intelligence.", "Wallet Tracking.", "Rug Exposure Analysis.", "Smart Money Detection."];
+
 export default function LandingPage() {
-  const [typedText, setTypedText] = useState('');
-  const [activeTab, setActiveTab] = useState<'scan' | 'whales' | 'walrus'>('scan');
-  
   // Interactive Chat Simulation states
   const [demoChat, setDemoChat] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([
     { role: 'assistant', text: 'Ask me anything about any Sui address, e.g., "Is this wallet a smart accumulator?"' }
@@ -44,30 +41,37 @@ export default function LandingPage() {
   };
 
   // Hero headline typing effect
-  const words = ["Onchain Intelligence.", "Wallet Tracking.", "Rug Exposure Analysis.", "Smart Money Detection."];
   const [wordIdx, setWordIdx] = useState(0);
   const [subText, setSubText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    const currentWord = words[wordIdx];
-    
-    if (isDeleting) {
-      timer = setTimeout(() => {
-        setSubText(prev => prev.slice(0, -1));
-      }, 40);
-    } else {
-      timer = setTimeout(() => {
-        setSubText(prev => currentWord.slice(0, prev.length + 1));
-      }, 70);
-    }
+    const currentWord = HERO_WORDS[wordIdx];
 
-    if (!isDeleting && subText === currentWord) {
-      timer = setTimeout(() => setIsDeleting(true), 2000);
-    } else if (isDeleting && subText === '') {
-      setIsDeleting(false);
-      setWordIdx(prev => (prev + 1) % words.length);
+    const timer = setTimeout(() => {
+      if (isDeleting) {
+        setSubText(prev => prev.slice(0, -1));
+        return;
+      }
+
+      if (subText === currentWord) {
+        setIsDeleting(true);
+        return;
+      }
+
+      setSubText(prev => currentWord.slice(0, prev.length + 1));
+    }, isDeleting ? 40 : subText === currentWord ? 2000 : 70);
+
+    if (isDeleting && subText === '') {
+      const resetTimer = setTimeout(() => {
+        setIsDeleting(false);
+        setWordIdx(prev => (prev + 1) % HERO_WORDS.length);
+      }, 0);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(resetTimer);
+      };
     }
 
     return () => clearTimeout(timer);

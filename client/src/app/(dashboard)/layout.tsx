@@ -7,6 +7,11 @@ import { useStore } from '@/store/useStore';
 import { ConnectModal, useCurrentAccount, useSignPersonalMessage } from '@mysten/dapp-kit';
 import { Wallet, KeyRound } from 'lucide-react';
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
 export default function DashboardGroupLayout({
   children,
 }: {
@@ -20,8 +25,8 @@ export default function DashboardGroupLayout({
     if (!account) return;
     try {
       await verifyWallet(account.address, signPersonalMessage);
-    } catch (err: any) {
-      alert(`Wallet cryptographic verification failed: ${err.message || err}`);
+    } catch (err: unknown) {
+      alert(`Wallet cryptographic verification failed: ${getErrorMessage(err)}`);
     }
   };
 

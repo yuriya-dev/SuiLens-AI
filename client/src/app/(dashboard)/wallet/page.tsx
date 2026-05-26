@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { Wallet, Search, Brain, HelpCircle, HelpCircle as HelpIcon } from 'lucide-react';
+import { Wallet, Search } from 'lucide-react';
 
 export default function WalletSearchFallback() {
   const router = useRouter();
-  const { analyzeWallet, isAnalyzing } = useStore();
+  const { isAnalyzing } = useStore();
   const [inputVal, setInputVal] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {

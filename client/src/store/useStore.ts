@@ -12,8 +12,13 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  charts?: any;
+  charts?: Record<string, unknown>;
 }
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return '⚠️ Connection error: Failed to communicate with the SuiLens AI backend server. Make sure the backend server is running on port 3001.';
+};
 
 interface AppState {
   connectedWallet: string | null;
@@ -256,9 +261,9 @@ export const useStore = create<AppState>((set, get) => ({
         }
       }));
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      throw new Error(err.message || '⚠️ Connection error: Failed to communicate with the SuiLens AI backend server. Make sure the backend server is running on port 3001.');
+      throw new Error(getErrorMessage(err));
     }
   },
 
