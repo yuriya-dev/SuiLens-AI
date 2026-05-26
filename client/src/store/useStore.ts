@@ -219,7 +219,8 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error('API server returned error during chat.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to communicate with the SuiLens AI backend server.');
       }
 
       const replyData = await response.json();
@@ -238,21 +239,9 @@ export const useStore = create<AppState>((set, get) => ({
         }
       }));
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      // Append a fallback connection error message
-      const errorMsg: ChatMessage = {
-        id: `ai-err-${Math.random().toString(36).substring(2, 9)}`,
-        role: 'assistant',
-        content: '⚠️ Connection error: Failed to communicate with the SuiLens AI backend server. Make sure the backend server is running on port 3001.',
-        timestamp: new Date().toISOString()
-      };
-      set((state) => ({
-        chatThreads: {
-          ...state.chatThreads,
-          [walletAddress]: [...(state.chatThreads[walletAddress] || []), errorMsg]
-        }
-      }));
+      throw new Error(err.message || '⚠️ Connection error: Failed to communicate with the SuiLens AI backend server. Make sure the backend server is running on port 3001.');
     }
   },
 

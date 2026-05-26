@@ -22,7 +22,6 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Landing Hero', path: '/', icon: Eye },
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Wallet Analyzer', path: '/wallet', icon: Wallet },
     { name: 'AI Chat Copilot', path: '/chat', icon: MessageSquare },
@@ -73,7 +72,7 @@ export default function Sidebar() {
             return (
               <Link
                 key={item.name}
-                href={item.path === '/wallet' ? '/wallet/0x7a8109d9f10be280b2a7582eb7bc3696f018888a' : item.path}
+                href={item.path}
                 className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative
                   ${isActive 
                     ? 'bg-gradient-to-r from-[rgba(0,209,255,0.12)] to-[rgba(139,92,246,0.04)] border-l-2 border-cyan-glow text-white shadow-[inset_0_0_12px_rgba(0,209,255,0.06)]' 

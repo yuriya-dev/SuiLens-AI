@@ -1,119 +1,24 @@
-export interface TokenAllocation {
-  symbol: string;
-  name: string;
-  balance: number;
-  valueUSD: number;
-  percentage: number;
-  color: string;
-}
-
-export interface TransactionActivity {
-  id: string;
-  type: 'swap' | 'transfer' | 'liquidity' | 'contract_call';
-  tokenIn?: string;
-  tokenOut?: string;
-  amountIn?: number;
-  amountOut?: number;
-  amountUSD: number;
-  timestamp: string;
-  status: 'success' | 'failed';
-  hash: string;
-  interactedWith: string;
-  isSuspicious: boolean;
-}
-
-export interface RiskIndicator {
-  title: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high';
-}
-
-export interface WalletData {
-  address: string;
-  ensName?: string;
-  portfolioValueUSD: number;
-  riskScore: number;
-  smartMoneyScore: number;
-  whaleScore: number;
-  scamExposureScore: number;
-  personality: string;
-  tag: string;
-  summaryProfessional: string;
-  summaryRoast: string;
-  summaryExplainLike5: string;
-  confidenceScore: number;
-  tokenAllocations: TokenAllocation[];
-  activityTimeline: TransactionActivity[];
-  riskIndicators: RiskIndicator[];
-}
-
-export interface WhaleFeedItem {
-  id: string;
-  sender: string;
-  senderName?: string;
-  receiver: string;
-  receiverName?: string;
-  amount: number;
-  token: string;
-  amountUSD: number;
-  type: 'transfer' | 'swap' | 'mint' | 'burn';
-  timestamp: string;
-  hash: string;
-  isSuspicious: boolean;
-}
-
-export interface SavedAnalysis {
-  address: string;
-  timestamp: string;
-  riskScore: number;
-  blobId: string;
-  walrusUrl: string;
-  sizeBytes: number;
-}
+import { 
+  TokenAllocation, 
+  TransactionActivity, 
+  RiskIndicator, 
+  WalletData, 
+  WhaleFeedItem, 
+  SavedAnalysis 
+} from './types';
 
 // Global server memory state representing decentralized DB snapshots
 export const serverSavedAnalyses: SavedAnalysis[] = [
-  { address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", timestamp: new Date().toISOString(), riskScore: 14, blobId: "walrus-blob-sui-lens-whale-9034", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034", sizeBytes: 15420 },
   { address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", timestamp: new Date().toISOString(), riskScore: 88, blobId: "walrus-blob-sui-lens-degen-4122", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-degen-4122", sizeBytes: 18910 },
   { address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", timestamp: new Date().toISOString(), riskScore: 28, blobId: "walrus-blob-sui-lens-farmer-5592", walrusUrl: "http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-farmer-5592", sizeBytes: 16212 }
 ];
 
 export const serverWhaleFeed: WhaleFeedItem[] = [
-  { id: "w-1", sender: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a", senderName: "suilens.sui", receiver: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", receiverName: "yieldfarmer.sui", amount: 150000, token: "SUI", amountUSD: 375000, type: "transfer", timestamp: new Date().toISOString(), hash: "0xfa12...99bc", isSuspicious: false },
+  { id: "w-1", sender: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a", senderName: "degentrader.sui", receiver: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", receiverName: "yieldfarmer.sui", amount: 150000, token: "SUI", amountUSD: 375000, type: "transfer", timestamp: new Date().toISOString(), hash: "0xfa12...99bc", isSuspicious: false },
   { id: "w-2", sender: "0xab12...cde3", receiver: "Cetus Router Contract", amount: 500000, token: "CETUS", amountUSD: 650000, type: "swap", timestamp: new Date().toISOString(), hash: "0xbc3f...78da", isSuspicious: false }
 ];
 
 export const mockWallets: Record<string, WalletData> = {
-  "0x7a8109d9f10be280b2a7582eb7bc3696f018888a": {
-    address: "0x7a8109d9f10be280b2a7582eb7bc3696f018888a",
-    ensName: "suilens.sui",
-    portfolioValueUSD: 1450280.45,
-    riskScore: 14,
-    smartMoneyScore: 92,
-    whaleScore: 88,
-    scamExposureScore: 5,
-    personality: "Smart Whale & Early Accumulator",
-    tag: "Smart Whale",
-    summaryProfessional: "This wallet demonstrates highly disciplined portfolio management characterized by long-term accumulation of blue-chip Sui ecosystem tokens. 72% of capital is deployed in SUI and liquid staking derivatives (LSTs). Transaction frequency is low but of large volume, primarily interacting with top-tier lending protocols like Scallop and Navi. Early buy-in patterns on emerging DEX tokens suggest strategic insider or sophisticated research alignment.",
-    summaryRoast: "A mega-whale playing it safe. You are basically the institutional equivalent of a boring index fund investor who bought SUI at $0.40 and now spends their time counting dividends in yield farms. You're so risk-averse you probably verify smart contracts in your sleep. Where's the fun in a 14% risk score? Live a little, buy some memes.",
-    summaryExplainLike5: "This wallet belongs to a very rich, smart digital dragon. Instead of buying silly toy coins that could disappear tomorrow, this dragon keeps their golden coins safe in the strongest digital castles. Sometimes, they let others borrow their coins in exchange for small interest coins, making their pile grow bigger every single day.",
-    confidenceScore: 98,
-    tokenAllocations: [
-      { symbol: "SUI", name: "Sui Network", balance: 350000, valueUSD: 875000, percentage: 60.3, color: "#00d1ff" },
-      { symbol: "haSUI", name: "Haedal Liquid Staked SUI", balance: 80000, valueUSD: 216000, percentage: 14.9, color: "#8b5cf6" },
-      { symbol: "CETUS", name: "Cetus Token", balance: 120000, valueUSD: 156000, percentage: 10.8, color: "#6fe7ff" },
-      { symbol: "USDC", name: "USD Coin", balance: 110000, valueUSD: 110000, percentage: 7.6, color: "#10b981" },
-      { symbol: "DEEP", name: "DeepBook Token", balance: 290000, valueUSD: 93280.45, percentage: 6.4, color: "#f59e0b" }
-    ],
-    activityTimeline: [
-      { id: "tx-1", type: "liquidity", amountUSD: 50000, timestamp: new Date().toISOString(), status: "success", hash: "0x3f5c...8b7d", interactedWith: "Cetus CLMM Pool", isSuspicious: false },
-      { id: "tx-2", type: "swap", tokenIn: "USDC", tokenOut: "SUI", amountIn: 25000, amountOut: 10000, amountUSD: 25000, timestamp: new Date().toISOString(), status: "success", hash: "0x8e2b...4a1c", interactedWith: "Aggregator (7Capital)", isSuspicious: false }
-    ],
-    riskIndicators: [
-      { title: "High Stablecoin and Bluechip Ratio", description: "Over 80% of assets are in SUI, LSTs, or USDC, minimizing rapid downside exposure.", severity: "low" },
-      { title: "Verified Smart Contract Interactors", description: "100% of transaction interactions are with audited and established protocols (Scallop, Navi, Cetus).", severity: "low" }
-    ]
-  },
   "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a": {
     address: "0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a",
     ensName: "degentrader.sui",

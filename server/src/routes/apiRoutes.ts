@@ -3,7 +3,9 @@ import {
   analyzeWalletController, 
   historyController, 
   whalesController, 
-  chatController 
+  chatController,
+  pricesController,
+  insightsController
 } from '../controllers/apiControllers';
 import { 
   getNonceController, 
@@ -23,6 +25,8 @@ router.get('/history', historyController);
 router.get('/whales', whalesController);
 router.get('/whales/stream', getWhaleStreamController);
 router.post('/chat', chatController);
+router.get('/prices', pricesController);
+router.post('/insights', insightsController);
 
 // Cryptographic Wallet Authentication
 router.post('/auth/nonce', getNonceController);

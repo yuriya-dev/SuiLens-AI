@@ -118,6 +118,11 @@ export const chatController = async (req: Request, res: Response) => {
       null
     );
 
+    // Return HTTP 500 if AI reply is an API warning or error message
+    if (aiText.includes('⚠️')) {
+      return res.status(500).json({ error: aiText.replace(/⚠️/g, '').trim() });
+    }
+
     // Save logs to Supabase if database is active
     if (isDbActive) {
       try {
@@ -153,5 +158,28 @@ export const chatController = async (req: Request, res: Response) => {
     return res.json({ content: aiText });
   } catch (err: any) {
     return res.status(500).json({ error: 'AI reasoning failure.' });
+  }
+};
+
+export const pricesController = async (req: Request, res: Response) => {
+  try {
+    const prices = await TatumService.getRealTimePrices();
+    return res.json(prices);
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Failed to fetch market prices.' });
+  }
+};
+
+export const insightsController = async (req: Request, res: Response) => {
+  const { settings } = req.body;
+  const simulateMode = settings?.simulateMode !== false;
+  const openaiApiKey = settings?.openaiApiKey || process.env.OPENAI_API_KEY || '';
+
+  try {
+    const insights = await AIService.getEcosystemInsights(simulateMode, openaiApiKey);
+    return res.json(insights);
+  } catch (err: any) {
+    console.error('[Insights Controller Error]', err);
+    return res.status(500).json({ error: 'Failed to generate ecosystem insights.' });
   }
 };

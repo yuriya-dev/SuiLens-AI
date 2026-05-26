@@ -16,7 +16,7 @@ export const getWalrusBlobController = async (req: Request, res: Response) => {
     
     // Find the saved analysis in local memory to retrieve the associated address
     const saved = serverSavedAnalyses.find(a => a.blobId === blobId);
-    const targetAddress = saved?.address || '0x7a8109d9f10be280b2a7582eb7bc3696f018888a'; // fallback address
+    const targetAddress = saved?.address || '0xde202f5a6b0c2eef9ba7582eb7bc3696f0188889a'; // fallback address
     
     // Get or generate target wallet data
     const walletData = mockWallets[targetAddress.toLowerCase()] || generateMockWallet(targetAddress);

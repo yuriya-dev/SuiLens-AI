@@ -251,8 +251,8 @@ export default function WalletAnalysis() {
 
             {/* Allocation listing progress rows */}
             <div className="sm:col-span-7 space-y-3">
-              {currentWalletData.tokenAllocations.map((tok) => (
-                <div key={tok.symbol} className="space-y-1">
+              {currentWalletData.tokenAllocations.map((tok, idx) => (
+                <div key={`${tok.symbol}-${idx}`} className="space-y-1">
                   <div className="flex items-center justify-between text-xs font-semibold">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tok.color }} />

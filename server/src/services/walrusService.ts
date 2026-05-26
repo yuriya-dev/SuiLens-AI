@@ -1,4 +1,5 @@
-import { SavedAnalysis, serverSavedAnalyses } from './mockDb';
+import { SavedAnalysis } from './types';
+import { serverSavedAnalyses } from './mockDb';
 import { prisma, isDbActive } from './dbService';
 
 export class WalrusService {

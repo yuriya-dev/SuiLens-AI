@@ -17,8 +17,38 @@ import {
 import { generateRandomWhaleTx } from '@/lib/mockData';
 
 export default function MainDashboard() {
-  const { whaleFeed, addWhaleTx, savedAnalyses, fetchWhales, fetchHistory } = useStore();
-  const [pulsePrice, setPulsePrice] = useState({ sui: 2.50, cetus: 1.30, deep: 0.32 });
+  const { whaleFeed, addWhaleTx, savedAnalyses, fetchWhales, fetchHistory, simulateMode, openaiApiKey } = useStore();
+  const [pulsePrice, setPulsePrice] = useState({ sui: 2.10, cetus: 0.35, deep: 0.06 });
+  const [insights, setInsights] = useState<{ whaleInsight: string; riskInsight: string } | null>(null);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(true);
+
+  // Fetch dynamic AI insights on mount or when simulateMode / apiKey settings change
+  useEffect(() => {
+    const fetchAIInsights = async () => {
+      setIsLoadingInsights(true);
+      try {
+        const res = await fetch('http://localhost:3001/api/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            settings: { simulateMode, openaiApiKey }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setInsights(data);
+        } else {
+          console.error('Failed to retrieve AI insights, status:', res.status);
+        }
+      } catch (err) {
+        console.error('Failed to fetch AI insights:', err);
+      } finally {
+        setIsLoadingInsights(false);
+      }
+    };
+
+    fetchAIInsights();
+  }, [simulateMode, openaiApiKey]);
 
   // Fetch initial telemetry from backend server
   useEffect(() => {
@@ -26,32 +56,83 @@ export default function MainDashboard() {
     fetchHistory();
   }, [fetchWhales, fetchHistory]);
 
-  // Simulate floating real-time prices
+  // Fetch real-time market prices from Binance via the server gateway
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPulsePrice(prev => ({
-        sui: Number((prev.sui + (Math.random() * 0.04 - 0.02)).toFixed(3)),
-        cetus: Number((prev.cetus + (Math.random() * 0.02 - 0.01)).toFixed(3)),
-        deep: Number((prev.deep + (Math.random() * 0.008 - 0.004)).toFixed(4))
-      }));
-    }, 4000);
+    const fetchLivePrices = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/prices');
+        if (res.ok) {
+          const data = await res.json();
+          setPulsePrice({
+            sui: Number((data.SUI || 2.10).toFixed(3)),
+            cetus: Number((data.CETUS || 0.35).toFixed(3)),
+            deep: Number((data.DEEP || 0.06).toFixed(4))
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch real-time market prices:', err);
+      }
+    };
+
+    fetchLivePrices();
+    const interval = setInterval(fetchLivePrices, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate live incoming whale transactions
+  // Connect live to the backend Server-Sent Events (SSE) transaction stream
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newTx = generateRandomWhaleTx();
-      addWhaleTx(newTx);
-    }, 9000);
-    return () => clearInterval(interval);
+    console.log('[Dashboard] Connecting to real-time transaction stream...');
+    const eventSource = new EventSource('http://localhost:3001/api/whales/stream');
+
+    eventSource.onmessage = (event) => {
+      try {
+        const tx = JSON.parse(event.data);
+        console.log(`[Dashboard] Incoming transfer: $${tx.amountUSD.toLocaleString()} USD`);
+        addWhaleTx(tx);
+      } catch (err) {
+        console.error('[Dashboard] Fail parsing stream transaction:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('[Dashboard] EventSource stream connection error:', err);
+    };
+
+    return () => {
+      console.log('[Dashboard] Closing real-time transaction stream.');
+      eventSource.close();
+    };
   }, [addWhaleTx]);
 
-  const smartWallets = [
-    { name: 'suilens.sui', address: '0x7a8109d9f10be280b2a7582eb7bc3696f018888a', value: '$1.45M', risk: 14, tag: 'Smart Whale' },
-    { name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', value: '$312K', risk: 28, tag: 'DeFi Degen' },
-    { name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', value: '$24.5K', risk: 88, tag: 'High Risk' }
-  ];
+  // Deduplicate savedAnalyses by address to only show the latest snapshot for each unique address
+  const uniqueAnalysesList: typeof savedAnalyses = [];
+  const seenAddresses = new Set<string>();
+  savedAnalyses.forEach(analysis => {
+    const addr = analysis.address.toLowerCase();
+    if (!seenAddresses.has(addr)) {
+      seenAddresses.add(addr);
+      uniqueAnalysesList.push(analysis);
+    }
+  });
+
+  const smartWallets = uniqueAnalysesList.length > 0
+    ? uniqueAnalysesList.slice(0, 5).map(analysis => {
+        const shortAddr = `${analysis.address.slice(0, 6)}...${analysis.address.slice(-4)}`;
+        const risk = analysis.riskScore;
+        const tag = risk < 30 ? 'Low Risk' : risk < 70 ? 'Active Holder' : 'High Risk';
+        return {
+          name: shortAddr,
+          address: analysis.address,
+          value: `$${((analysis.sizeBytes || 15000) * 8.2).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+          risk: risk,
+          tag: tag
+        };
+      })
+    : [
+        { name: 'smartmoney.sui', address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', value: '$1.45M', risk: 14, tag: 'Smart Whale' },
+        { name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', value: '$312K', risk: 28, tag: 'DeFi Degen' },
+        { name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', value: '$24.5K', risk: 88, tag: 'High Risk' }
+      ];
 
   return (
     <div className="space-y-8 text-left">
@@ -135,14 +216,39 @@ export default function MainDashboard() {
               <Cpu className="w-5 h-5 text-cyan-glow animate-pulse" />
               <h3 className="font-display font-bold text-base text-white">SuiLens AI Ecosystem Insight</h3>
             </div>
-            <div className="space-y-4 text-sm font-sans text-white/70 leading-relaxed">
-              <p>
-                💡 <span className="text-white font-semibold">Whale Accumulation Event:</span> Our Tatum RPC scanners detected three massive whale addresses withdrawing over 2,500,000 SUI from exchanges and injecting them into Scallop and Navi stable-farming collateral vaults. This signals a strong bias toward capital preservation and yield farming over spot dumping.
-              </p>
-              <p>
-                ⚠️ <span className="text-warning-orange font-semibold">Meme Contract Risk Warning:</span> Over 48 new liquidity pools were initialized on Cetus in the last 12 hours. Dynamic code scans show 82% of these pools contain unverified contracts with zero-day lock indicators. Immediate caution is recommended when swapping tokens with under $20,000 locked liquidity.
-              </p>
-            </div>
+            {isLoadingInsights ? (
+              <div className="space-y-4 py-2">
+                <div className="flex items-start gap-2.5 animate-pulse">
+                  <div className="w-4 h-4 rounded-full bg-white/10 mt-1 shrink-0" />
+                  <div className="space-y-2 w-full">
+                    <div className="h-4 bg-white/10 rounded w-1/4" />
+                    <div className="h-3.5 bg-white/5 rounded w-5/6" />
+                    <div className="h-3.5 bg-white/5 rounded w-4/5" />
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5 animate-pulse mt-4">
+                  <div className="w-4 h-4 rounded-full bg-white/10 mt-1 shrink-0" />
+                  <div className="space-y-2 w-full">
+                    <div className="h-4 bg-white/10 rounded w-1/4" />
+                    <div className="h-3.5 bg-white/5 rounded w-11/12" />
+                    <div className="h-3.5 bg-white/5 rounded w-3/4" />
+                  </div>
+                </div>
+              </div>
+            ) : insights ? (
+              <div className="space-y-4 text-sm font-sans text-white/70 leading-relaxed">
+                <p>
+                  💡 <span className="text-white font-semibold">Whale Flow:</span> {insights.whaleInsight}
+                </p>
+                <p>
+                  ⚠️ <span className="text-warning-orange font-semibold">Risk Warning:</span> {insights.riskInsight}
+                </p>
+              </div>
+            ) : (
+              <div className="text-xs text-white/40 italic py-2">
+                No insights could be synthesized at this time. Please check your network connection or settings.
+              </div>
+            )}
           </div>
 
           {/* Whale Feed alerts summary */}
@@ -183,9 +289,20 @@ export default function MainDashboard() {
                       {tx.amount.toLocaleString()} {tx.token} 
                       <span className="text-white/40 text-[10px] font-sans ml-1">(${tx.amountUSD.toLocaleString()})</span>
                     </span>
-                    <span className="text-[10px] text-white/30 font-mono">
-                      {new Date(tx.timestamp).toLocaleTimeString()}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-white/30 font-mono bg-white/5 px-2 py-0.5 rounded">
+                        {new Date(tx.timestamp).toLocaleTimeString()}
+                      </span>
+                      <a 
+                        href={`https://suiscan.xyz/mainnet/tx/${tx.hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 rounded bg-white/5 border border-white/5 hover:bg-cyan-glow/10 hover:border-cyan-glow/30 text-white/40 hover:text-cyan-glow transition-all"
+                        title="View on Suiscan"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -201,33 +318,47 @@ export default function MainDashboard() {
             </h3>
             
             <div className="space-y-3.5 text-left">
-              {smartWallets.map((wallet) => (
-                <Link
-                  key={wallet.address}
-                  href={`/wallet/${wallet.address}`}
-                  className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/2 hover:bg-cyan-glow/5 hover:border-cyan-glow/30 transition-all block group"
+              {smartWallets.map((wallet, idx) => (
+                <div
+                  key={`${wallet.address}-${idx}`}
+                  className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/2 hover:bg-cyan-glow/5 hover:border-cyan-glow/30 transition-all group"
                 >
-                  <div className="space-y-1">
-                    <span className="font-display font-bold text-xs text-white/90 group-hover:text-cyan-glow transition-colors">
-                      {wallet.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-sans text-[10px] text-white/40 uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded">
-                        {wallet.tag}
+                  <Link
+                    href={`/wallet/${wallet.address}`}
+                    className="flex items-center justify-between flex-1 cursor-pointer"
+                  >
+                    <div className="space-y-1">
+                      <span className="font-display font-bold text-xs text-white/90 group-hover:text-cyan-glow transition-colors">
+                        {wallet.name}
                       </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-sans text-[10px] text-white/40 uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded">
+                          {wallet.tag}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="text-right space-y-1">
-                    <span className="font-mono text-xs font-bold text-white">{wallet.value}</span>
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <Shield className={`w-3 h-3 ${wallet.risk < 30 ? 'text-success-green' : wallet.risk < 70 ? 'text-warning-orange' : 'text-danger-red'}`} />
-                      <span className={`font-mono text-[10px] font-bold ${wallet.risk < 30 ? 'text-success-green' : wallet.risk < 70 ? 'text-warning-orange' : 'text-danger-red'}`}>
-                        Risk: {wallet.risk}%
-                      </span>
+                    <div className="text-right space-y-1 mr-4">
+                      <span className="font-mono text-xs font-bold text-white">{wallet.value}</span>
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <Shield className={`w-3 h-3 ${wallet.risk < 30 ? 'text-success-green' : wallet.risk < 70 ? 'text-warning-orange' : 'text-danger-red'}`} />
+                        <span className={`font-mono text-[10px] font-bold ${wallet.risk < 30 ? 'text-success-green' : wallet.risk < 70 ? 'text-warning-orange' : 'text-danger-red'}`}>
+                          Risk: {wallet.risk}%
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+
+                  <a 
+                    href={`https://suiscan.xyz/mainnet/account/${wallet.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg bg-white/5 border border-white/5 hover:bg-cyan-glow/10 hover:border-cyan-glow/30 text-white/40 hover:text-cyan-glow transition-all"
+                    title="View Address on Suiscan"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               ))}
             </div>
           </div>

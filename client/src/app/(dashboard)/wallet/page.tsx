@@ -23,8 +23,7 @@ export default function WalletSearchFallback() {
   };
 
   const sampleWallets = [
-    { name: 'suilens.sui (Smart Money)', address: '0x7a8109d9f10be280b2a7582eb7bc3696f018888a' },
-    { name: 'degentrader.sui (Meme Degen)', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a' },
+    { name: 'degentrader.sui (Meme Degen)', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f0188889a' },
     { name: 'yieldfarmer.sui (Defi Farmer)', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd' }
   ];
 

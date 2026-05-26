@@ -292,7 +292,7 @@ function PortfolioReportsContent() {
 
   // Static fallback presets to display in list if user's Postgres database is fresh/empty
   const mockReportItems = [
-    { address: '0x7a8109d9f10be280b2a7582eb7bc3696f018888a', timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), riskScore: 14, blobId: 'walrus-blob-sui-lens-whale-9034', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034', sizeBytes: 15420, tag: 'suilens.sui Research Package', type: 'Bluechip Accumulator' },
+    { address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), riskScore: 14, blobId: 'walrus-blob-sui-lens-whale-9034', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-whale-9034', sizeBytes: 15420, tag: 'smartmoney.sui Research Package', type: 'Bluechip Accumulator' },
     { address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', timestamp: new Date(Date.now() - 3600000 * 24).toISOString(), riskScore: 28, blobId: 'walrus-blob-sui-lens-farmer-5592', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-farmer-5592', sizeBytes: 16212, tag: 'yieldfarmer.sui DeFi Audit', type: 'Stable yield provider' },
     { address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', timestamp: new Date(Date.now() - 3600000 * 5).toISOString(), riskScore: 88, blobId: 'walrus-blob-sui-lens-degen-4122', walrusUrl: 'http://localhost:3001/api/walrus/blob/walrus-blob-sui-lens-degen-4122', sizeBytes: 18910, tag: 'degentrader.sui Speculative Audit', type: 'High risk degen' }
   ];

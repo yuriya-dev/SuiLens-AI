@@ -125,7 +125,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
             <Link 
-              href="/wallet/0x7a8109d9f10be280b2a7582eb7bc3696f018888a"
+              href="/wallet"
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-glow to-sui-blue hover:from-sui-blue hover:to-cyan-glow text-[#050816] font-display font-bold rounded-xl tracking-wider uppercase text-sm shadow-[0_0_25px_rgba(0,209,255,0.3)] hover:shadow-[0_0_35px_rgba(0,209,255,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Analyze Wallet
