@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import LoadingScanner from '@/components/LoadingScanner';
+import MarkdownText from '@/components/MarkdownText';
 import WalrusStorageBadge from '@/components/WalrusStorageBadge';
 import { 
   Shield, 
@@ -27,74 +28,6 @@ const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return 'AI Copilot suffered a reasoning lapse. Please try again.';
 };
-
-// Sleek lightweight React Markdown segment compiler
-function MarkdownText({ content }: { content: string }) {
-  const lines = content.split('\n');
-
-  return (
-    <div className="space-y-1.5">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        const isListItem = trimmed.startsWith('•') || trimmed.startsWith('-') || (trimmed.startsWith('*') && !trimmed.startsWith('**'));
-        const cleanLine = isListItem 
-          ? trimmed.substring(1).trim() 
-          : line;
-
-        const regex = /(\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g;
-        const segments = cleanLine.split(regex);
-        const processedSegments: React.ReactNode[] = [];
-
-        segments.forEach((seg, sIdx) => {
-          if (seg.startsWith('**') && seg.endsWith('**')) {
-            processedSegments.push(
-              <strong key={sIdx} className="font-bold text-cyan-glow">
-                {seg.substring(2, seg.length - 2)}
-              </strong>
-            );
-          } else if (seg.startsWith('`') && seg.endsWith('`')) {
-            processedSegments.push(
-              <code key={sIdx} className="font-mono bg-[#050816] px-1 py-0.5 rounded text-cyan-glow border border-white/5 text-[10px] tracking-wide">
-                {seg.substring(1, seg.length - 1)}
-              </code>
-            );
-          } else if (seg.startsWith('[') && seg.includes('](') && seg.endsWith(')')) {
-            const label = seg.substring(1, seg.indexOf(']('));
-            const url = seg.substring(seg.indexOf('](') + 2, seg.length - 1);
-            processedSegments.push(
-              <a 
-                key={sIdx} 
-                href={url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-cyan-glow underline hover:text-white transition-colors"
-              >
-                {label}
-              </a>
-            );
-          } else {
-            processedSegments.push(<span key={sIdx}>{seg}</span>);
-          }
-        });
-
-        if (isListItem) {
-          return (
-            <div key={idx} className="flex gap-2 items-start pl-2 text-xs">
-              <span className="text-cyan-glow shrink-0 mt-1.5 text-[8px]">•</span>
-              <div className="flex-1 leading-relaxed">{processedSegments}</div>
-            </div>
-          );
-        }
-
-        return (
-          <p key={idx} className="min-h-[1.1rem] leading-relaxed text-xs text-white/80">
-            {processedSegments}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function MyPortfolioPage() {
   const { 
@@ -542,7 +475,13 @@ export default function MyPortfolioPage() {
                     {msg.role === 'user' ? (
                       <p>{msg.content}</p>
                     ) : (
-                      <MarkdownText content={msg.content} />
+                      <MarkdownText
+                        content={msg.content}
+                        containerClassName="space-y-1.5"
+                        paragraphClassName="min-h-[1.1rem] leading-relaxed text-xs text-white/80"
+                        listItemClassName="flex gap-2 items-start pl-2 text-xs"
+                        codeClassName="font-mono bg-[#050816] px-1 py-0.5 rounded text-cyan-glow border border-white/5 text-[10px] tracking-wide"
+                      />
                     )}
                   </div>
                 </div>

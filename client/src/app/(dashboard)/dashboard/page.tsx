@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
 import { 
@@ -35,9 +35,9 @@ export default function MainDashboard() {
     }
   }, [connectedWallet, analyzeWallet]);
 
-  const truncateAddress = (addr: string) => {
+  const truncateAddress = useCallback((addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+  }, []);
 
   const [pulsePrice, setPulsePrice] = useState({ sui: 2.10, cetus: 0.35, deep: 0.06 });
   const [insights, setInsights] = useState<{ whaleInsight: string; riskInsight: string } | null>(null);
@@ -125,19 +125,24 @@ export default function MainDashboard() {
     };
   }, [addWhaleTx]);
 
-  // Deduplicate savedAnalyses by address to only show the latest snapshot for each unique address
-  const uniqueAnalysesList: typeof savedAnalyses = [];
-  const seenAddresses = new Set<string>();
-  savedAnalyses.forEach(analysis => {
-    const addr = analysis.address.toLowerCase();
-    if (!seenAddresses.has(addr)) {
-      seenAddresses.add(addr);
-      uniqueAnalysesList.push(analysis);
-    }
-  });
+  const uniqueAnalysesList = useMemo(() => {
+    const list: typeof savedAnalyses = [];
+    const seenAddresses = new Set<string>();
 
-  const smartWallets = uniqueAnalysesList.length > 0
-    ? uniqueAnalysesList.slice(0, 5).map(analysis => {
+    savedAnalyses.forEach((analysis) => {
+      const address = analysis.address.toLowerCase();
+      if (!seenAddresses.has(address)) {
+        seenAddresses.add(address);
+        list.push(analysis);
+      }
+    });
+
+    return list;
+  }, [savedAnalyses]);
+
+  const smartWallets = useMemo(() => {
+    if (uniqueAnalysesList.length > 0) {
+      return uniqueAnalysesList.slice(0, 5).map((analysis) => {
         const shortAddr = `${analysis.address.slice(0, 6)}...${analysis.address.slice(-4)}`;
         const risk = analysis.riskScore;
         const tag = risk < 30 ? 'Low Risk' : risk < 70 ? 'Active Holder' : 'High Risk';
@@ -145,18 +150,27 @@ export default function MainDashboard() {
           name: shortAddr,
           address: analysis.address,
           value: `$${((analysis.sizeBytes || 15000) * 8.2).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-          risk: risk,
-          tag: tag
+          risk,
+          tag
         };
-      })
-    : [
-        { name: 'smartmoney.sui', address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', value: '$1.45M', risk: 14, tag: 'Smart Whale' },
-        { name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', value: '$312K', risk: 28, tag: 'DeFi Degen' },
-        { name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', value: '$24.5K', risk: 88, tag: 'High Risk' }
-      ];
+      });
+    }
 
-  const hasMatchedData = currentWalletData && 
-    currentWalletData.address.toLowerCase() === connectedWallet?.toLowerCase();
+    return [
+      { name: 'smartmoney.sui', address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', value: '$1.45M', risk: 14, tag: 'Smart Whale' },
+      { name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', value: '$312K', risk: 28, tag: 'DeFi Degen' },
+      { name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', value: '$24.5K', risk: 88, tag: 'High Risk' }
+    ];
+  }, [uniqueAnalysesList]);
+
+  const hasMatchedData = useMemo(
+    () =>
+      Boolean(
+        currentWalletData &&
+          currentWalletData.address.toLowerCase() === connectedWallet?.toLowerCase()
+      ),
+    [currentWalletData, connectedWallet]
+  );
 
   return (
     <div className="space-y-8 text-left">
@@ -192,10 +206,10 @@ export default function MainDashboard() {
                   Connected Portfolio
                 </span>
                 <h2 className="font-display font-bold text-xl text-white tracking-wide truncate">
-                  {hasMatchedData && currentWalletData.ensName ? currentWalletData.ensName : truncateAddress(connectedWallet)}
+                  {currentWalletData?.ensName ? currentWalletData.ensName : (connectedWallet ? truncateAddress(connectedWallet) : 'No Wallet')}
                 </h2>
                 <span className="font-sans text-[10px] text-white/40 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded border border-white/5 inline-block font-semibold">
-                  {hasMatchedData ? currentWalletData.tag : 'Sui Account'}
+                  {currentWalletData?.tag ?? 'Sui Account'}
                 </span>
               </div>
               
@@ -203,7 +217,7 @@ export default function MainDashboard() {
                 <span className="text-[9px] font-display font-semibold tracking-wider text-white/30 uppercase">Net Portfolio Value</span>
                 {hasMatchedData ? (
                   <h3 className="font-display font-extrabold text-3xl text-white glow-text-cyan">
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(currentWalletData.portfolioValueUSD)}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(currentWalletData?.portfolioValueUSD ?? 0)}
                   </h3>
                 ) : (
                   <div className="h-9 w-44 bg-white/5 animate-pulse rounded-lg border border-white/5" />
@@ -216,7 +230,7 @@ export default function MainDashboard() {
               <span className="text-[9px] font-display font-semibold tracking-wider text-white/30 uppercase block">Top Asset Distributions</span>
               {hasMatchedData ? (
                 <div className="flex flex-wrap gap-2.5">
-                  {currentWalletData.tokenAllocations.slice(0, 4).map((tok, idx) => (
+                  {(currentWalletData?.tokenAllocations ?? []).slice(0, 4).map((tok, idx) => (
                     <div 
                       key={`${tok.symbol}-${idx}`}
                       className="flex items-center gap-2 bg-[#0b1220]/60 border border-white/5 rounded-xl px-3 py-2 text-xs shadow-sm hover:border-cyan-glow/20 transition-all font-mono"
@@ -242,8 +256,8 @@ export default function MainDashboard() {
                 <div className="text-left space-y-0.5">
                   <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase">Risk Level</span>
                   {hasMatchedData ? (
-                    <span className={`font-mono text-xs font-bold block ${currentWalletData.riskScore < 30 ? 'text-success-green' : currentWalletData.riskScore < 70 ? 'text-warning-orange' : 'text-danger-red'}`}>
-                      {currentWalletData.riskScore}% Risk
+                    <span className={`font-mono text-xs font-bold block ${((currentWalletData?.riskScore ?? 0) < 30 ? 'text-success-green' : (currentWalletData?.riskScore ?? 0) < 70 ? 'text-warning-orange' : 'text-danger-red')}`}>
+                      {currentWalletData?.riskScore ?? 0}% Risk
                     </span>
                   ) : (
                     <div className="h-4 w-12 bg-white/5 animate-pulse rounded" />
@@ -254,7 +268,7 @@ export default function MainDashboard() {
                   <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase">Smart Score</span>
                   {hasMatchedData ? (
                     <span className="font-mono text-xs font-bold text-purple-glow block">
-                      {currentWalletData.smartMoneyScore}%
+                      {currentWalletData?.smartMoneyScore ?? 0}%
                     </span>
                   ) : (
                     <div className="h-4 w-12 bg-white/5 animate-pulse rounded" />

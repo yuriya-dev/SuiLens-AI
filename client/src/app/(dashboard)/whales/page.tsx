@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
 import { 
@@ -15,6 +15,9 @@ import {
 export default function WhaleTracker() {
   const { whaleFeed, addWhaleTx, savedAnalyses, fetchWhales, fetchHistory } = useStore();
   const [filterSuspicious, setFilterSuspicious] = useState(false);
+  const toggleFilterSuspicious = useCallback(() => {
+    setFilterSuspicious((current) => !current);
+  }, []);
 
   // Fetch initial telemetry from backend server
   useEffect(() => {
@@ -47,31 +50,40 @@ export default function WhaleTracker() {
     };
   }, [addWhaleTx]);
 
-  const filteredFeed = filterSuspicious 
-    ? whaleFeed.filter(tx => tx.isSuspicious)
-    : whaleFeed;
+  const filteredFeed = useMemo(
+    () => (filterSuspicious ? whaleFeed.filter((tx) => tx.isSuspicious) : whaleFeed),
+    [filterSuspicious, whaleFeed]
+  );
 
-  // Deduplicate savedAnalyses by address to only show the latest snapshot for each unique address
-  const uniqueAnalysesList: typeof savedAnalyses = [];
-  const seenAddresses = new Set<string>();
-  (savedAnalyses || []).forEach(analysis => {
-    const addr = analysis.address.toLowerCase();
-    if (!seenAddresses.has(addr)) {
-      seenAddresses.add(addr);
-      uniqueAnalysesList.push(analysis);
-    }
-  });
+  const uniqueAnalysesList = useMemo(() => {
+    const list: typeof savedAnalyses = [];
+    const seenAddresses = new Set<string>();
 
-  // Sort by report size or dynamic valuation estimation
-  const sortedAnalyses = [...uniqueAnalysesList].sort((a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0));
+    savedAnalyses.forEach((analysis) => {
+      const address = analysis.address.toLowerCase();
+      if (!seenAddresses.has(address)) {
+        seenAddresses.add(address);
+        list.push(analysis);
+      }
+    });
 
-  const smartWalletsLeaderboard = sortedAnalyses.length > 0
-    ? sortedAnalyses.slice(0, 5).map((analysis, index) => {
+    return list;
+  }, [savedAnalyses]);
+
+  const sortedAnalyses = useMemo(
+    () => [...uniqueAnalysesList].sort((first, second) => (second.sizeBytes || 0) - (first.sizeBytes || 0)),
+    [uniqueAnalysesList]
+  );
+
+  const smartWalletsLeaderboard = useMemo(() => {
+    if (sortedAnalyses.length > 0) {
+      return sortedAnalyses.slice(0, 5).map((analysis, index) => {
         const shortAddr = `${analysis.address.slice(0, 6)}...${analysis.address.slice(-4)}`;
         const risk = analysis.riskScore;
         const tag = risk < 30 ? 'Low Risk' : risk < 70 ? 'Active Holder' : 'High Risk';
         const volumeUSD = `$${((analysis.sizeBytes || 15000) * 8.2).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
         const score = 100 - risk;
+
         return {
           rank: index + 1,
           name: shortAddr,
@@ -80,27 +92,39 @@ export default function WhaleTracker() {
           score,
           behavior: tag
         };
-      })
-    : [
-        { rank: 1, name: 'suilens.sui', address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', volumeUSD: '$2,145,000', score: 92, behavior: 'Accumulating' },
-        { rank: 2, name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', volumeUSD: '$890,200', score: 78, behavior: 'Farming Yield' },
-        { rank: 3, name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', volumeUSD: '$543,000', score: 45, behavior: 'Scalping Memes' }
-      ];
+      });
+    }
 
-  // Dynamic stats calculations based on live telemetry & database size
-  const uniqueWhalesCount = new Set((whaleFeed || []).map(tx => tx.sender.toLowerCase())).size;
-  const totalWhalesTracked = 1450 + uniqueWhalesCount + (savedAnalyses || []).length;
-  
-  const totalLargeSwaps24h = 2780 + (whaleFeed || []).length;
-  const feedTotalUSD = (whaleFeed || []).reduce((sum, tx) => sum + tx.amountUSD, 0);
-  const averageSwapValue = (whaleFeed || []).length > 0 
-    ? Math.round(feedTotalUSD / (whaleFeed || []).length) 
-    : 142500;
+    return [
+      { rank: 1, name: 'suilens.sui', address: '0x981ba24f6b0c2eef9ba7582eb7bc3696f018888b1', volumeUSD: '$2,145,000', score: 92, behavior: 'Accumulating' },
+      { rank: 2, name: 'yieldfarmer.sui', address: '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd', volumeUSD: '$890,200', score: 78, behavior: 'Farming Yield' },
+      { rank: 3, name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', volumeUSD: '$543,000', score: 45, behavior: 'Scalping Memes' }
+    ];
+  }, [sortedAnalyses]);
 
-  const safeTxs = (whaleFeed || []).filter(tx => !tx.isSuspicious).length;
-  const ecosystemHealthScore = (whaleFeed || []).length > 0
-    ? Math.min(Math.max(Math.round((safeTxs / (whaleFeed || []).length) * 100), 50), 100)
-    : 94;
+  const uniqueWhalesCount = useMemo(
+    () => new Set(whaleFeed.map((tx) => tx.sender.toLowerCase())).size,
+    [whaleFeed]
+  );
+
+  const totalWhalesTracked = useMemo(
+    () => 1450 + uniqueWhalesCount + savedAnalyses.length,
+    [uniqueWhalesCount, savedAnalyses]
+  );
+
+  const totalLargeSwaps24h = useMemo(() => 2780 + whaleFeed.length, [whaleFeed]);
+
+  const averageSwapValue = useMemo(() => {
+    if (whaleFeed.length === 0) return 142500;
+    const totalUsd = whaleFeed.reduce((sum, transaction) => sum + transaction.amountUSD, 0);
+    return Math.round(totalUsd / whaleFeed.length);
+  }, [whaleFeed]);
+
+  const ecosystemHealthScore = useMemo(() => {
+    if (whaleFeed.length === 0) return 94;
+    const safeTransactions = whaleFeed.filter((transaction) => !transaction.isSuspicious).length;
+    return Math.min(Math.max(Math.round((safeTransactions / whaleFeed.length) * 100), 50), 100);
+  }, [whaleFeed]);
 
   return (
     <div className="space-y-8 text-left">
@@ -118,7 +142,7 @@ export default function WhaleTracker() {
         
         {/* Toggle Filter suspicious */}
         <button
-          onClick={() => setFilterSuspicious(!filterSuspicious)}
+          onClick={toggleFilterSuspicious}
           className={`px-4 py-2.5 rounded-xl font-display font-bold text-xs uppercase tracking-wider border transition-all cursor-pointer
             ${filterSuspicious 
               ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
