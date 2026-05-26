@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
-  Wallet, 
+  Shield, 
   Waves, 
   FileText, 
   History, 
@@ -23,7 +23,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Wallet Analyzer', path: '/wallet', icon: Wallet },
+    { name: 'On-Chain Auditor', path: '/wallet', icon: Shield },
     { name: 'AI Chat Copilot', path: '/chat', icon: MessageSquare },
     { name: 'Whale Tracker', path: '/whales', icon: Waves },
     { name: 'Portfolio Reports', path: '/reports', icon: FileText },

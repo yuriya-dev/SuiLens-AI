@@ -10,16 +10,11 @@ export default function WalletSearchFallback() {
   const { analyzeWallet, isAnalyzing } = useStore();
   const [inputVal, setInputVal] = useState('');
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputVal.trim()) return;
 
-    try {
-      const data = await analyzeWallet(inputVal);
-      router.push(`/wallet/${data.address}`);
-    } catch (err) {
-      console.error(err);
-    }
+    router.push(`/wallet/${encodeURIComponent(inputVal.trim())}`);
   };
 
   const sampleWallets = [
@@ -41,10 +36,10 @@ export default function WalletSearchFallback() {
 
       <div className="space-y-2">
         <h1 className="font-display font-extrabold text-3xl text-white tracking-wide">
-          AI Wallet Analyzer
+          SuiLens AI On-Chain Asset & Contract Auditor
         </h1>
-        <p className="font-sans text-xs text-white/40 uppercase tracking-widest leading-relaxed max-w-md mx-auto">
-          Scan any Sui Wallet to analyze asset concentrations, profile behaviors, and verify rug pull risks
+        <p className="font-sans text-xs text-white/40 uppercase tracking-widest leading-relaxed max-w-xl mx-auto">
+          Scan any Sui Wallet, custom Token, or published Move Package to analyze asset concentrations, trace transaction behaviors, and verify contract rug pull vulnerabilities
         </p>
       </div>
 
@@ -56,17 +51,24 @@ export default function WalletSearchFallback() {
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           disabled={isAnalyzing}
-          className="w-full bg-[#0b1220]/60 border border-white/10 group-hover:border-cyan-glow/50 focus:border-cyan-glow text-white text-xs pl-12 pr-28 py-4.5 rounded-xl outline-none transition-all shadow-[0_4px_12px_rgba(0,0,0,0.3)] focus:shadow-[0_0_20px_rgba(0,209,255,0.15)] disabled:opacity-50"
+          className="w-full bg-[#0b1220]/60 border border-white/10 group-hover:border-cyan-glow/50 focus:border-cyan-glow text-white text-xs pl-12 pr-32 py-4.5 rounded-xl outline-none transition-all shadow-[0_4px_12px_rgba(0,0,0,0.3)] focus:shadow-[0_0_20px_rgba(0,209,255,0.15)] disabled:opacity-50"
         />
         <Search className="w-4 h-4 text-white/40 group-focus-within:text-cyan-glow absolute left-4.5 top-1/2 -translate-y-1/2 transition-colors" />
         
-        <button
-          type="submit"
-          disabled={!inputVal.trim() || isAnalyzing}
-          className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 rounded-lg bg-cyan-glow hover:bg-sui-blue text-[#050816] text-xs font-display font-bold uppercase tracking-wider transition-all disabled:opacity-30 cursor-pointer"
-        >
-          {isAnalyzing ? 'Scanning...' : 'Analyze'}
-        </button>
+        {isAnalyzing ? (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] text-cyan-glow bg-[#050816] border border-cyan-glow/30 px-3 py-1.5 rounded-lg font-display font-bold tracking-wider animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-glow animate-ping"></span>
+            <span>SCANNING...</span>
+          </div>
+        ) : (
+          <button
+            type="submit"
+            disabled={!inputVal.trim()}
+            className="absolute right-3 top-1/2 -translate-y-1/2 px-4 py-2 rounded-lg bg-cyan-glow hover:bg-sui-blue text-[#050816] text-xs font-display font-bold uppercase tracking-wider transition-all disabled:opacity-30 cursor-pointer"
+          >
+            Analyze
+          </button>
+        )}
       </form>
 
       {/* Sample presets triggers */}

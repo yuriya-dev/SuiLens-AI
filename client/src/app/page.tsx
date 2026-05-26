@@ -238,9 +238,9 @@ export default function LandingPage() {
             <div className="w-12 h-12 rounded-xl bg-cyan-glow/10 border border-cyan-glow/20 flex items-center justify-center text-cyan-glow">
               <Cpu className="w-6 h-6" />
             </div>
-            <h3 className="font-display font-bold text-lg text-white">AI Wallet Analyzer</h3>
+            <h3 className="font-display font-bold text-lg text-white">SuiLens AI On-Chain Asset & Contract Auditor</h3>
             <p className="font-sans text-sm text-white/50 leading-relaxed">
-              Scan any Sui wallet. Get instant profiles, custom trading personalities, confidence matrices, and comprehensive behavioral summaries.
+              Scan any Sui Wallet, custom Token, or published Move Package to analyze asset concentrations, trace transaction behaviors, and verify contract rug pull vulnerabilities.
             </p>
           </div>
 

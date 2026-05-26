@@ -27,13 +27,8 @@ export default function Navbar() {
     e.preventDefault();
     if (!inputVal.trim()) return;
     
-    try {
-      const data = await analyzeWallet(inputVal);
-      router.push(`/wallet/${data.address}`);
-      setInputVal('');
-    } catch (err) {
-      console.error(err);
-    }
+    router.push(`/wallet/${encodeURIComponent(inputVal.trim())}`);
+    setInputVal('');
   };
 
   const handleVerify = async () => {
@@ -59,14 +54,16 @@ export default function Navbar() {
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           disabled={isAnalyzing}
-          className="w-full bg-[#0b1220]/60 border border-white/10 group-hover:border-cyan-glow/50 focus:border-cyan-glow text-white/90 text-sm pl-11 pr-4 py-2.5 rounded-xl outline-none transition-all duration-300 font-sans tracking-wide shadow-[0_4px_12px_rgba(0,0,0,0.2)] focus:shadow-[0_0_15px_rgba(0,209,255,0.15)] disabled:opacity-50"
+          className={`w-full bg-[#0b1220]/60 border border-white/10 group-hover:border-cyan-glow/50 focus:border-cyan-glow text-white/90 text-sm pl-11 py-2.5 rounded-xl outline-none transition-all duration-300 font-sans tracking-wide shadow-[0_4px_12px_rgba(0,0,0,0.2)] focus:shadow-[0_0_15px_rgba(0,209,255,0.15)] disabled:opacity-50 ${
+            isAnalyzing ? 'pr-32' : 'pr-4'
+          }`}
         />
         <Search className="w-4 h-4 text-white/40 group-focus-within:text-cyan-glow absolute left-4 top-1/2 -translate-y-1/2 transition-colors" />
         
         {isAnalyzing && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs text-cyan-glow">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] text-cyan-glow bg-[#050816] border border-cyan-glow/30 px-2.5 py-1 rounded-lg font-display font-bold tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-glow animate-ping"></span>
-            <span className="font-display font-medium tracking-wide">SCANNING...</span>
+            <span>SCANNING...</span>
           </div>
         )}
       </form>
