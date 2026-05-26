@@ -9,6 +9,7 @@ import {
   Database, 
   ExternalLink,
   ChevronRight,
+  ChevronLeft,
   ShieldAlert,
   Calendar
 } from 'lucide-react';
@@ -17,6 +18,8 @@ import Link from 'next/link';
 export default function WalrusHistory() {
   const { savedAnalyses, fetchHistory } = useStore();
   const [filterQuery, setFilterQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
     fetchHistory();
@@ -24,6 +27,18 @@ export default function WalrusHistory() {
 
   const filteredAnalyses = savedAnalyses.filter(item => 
     item.address.toLowerCase().includes(filterQuery.toLowerCase())
+  );
+
+  // Reset page to 1 when search query or items per page change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterQuery, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredAnalyses.length / itemsPerPage);
+
+  const paginatedAnalyses = filteredAnalyses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
@@ -75,49 +90,140 @@ export default function WalrusHistory() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredAnalyses.map((item) => (
-              <div 
-                key={item.blobId}
-                className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-5 rounded-xl border border-white/5 bg-white/2 hover:bg-white/4 hover:border-cyan-glow/20 transition-all gap-6 text-left"
-              >
-                {/* Target Address Info */}
-                <div className="space-y-2 max-w-sm">
-                  <Link 
-                    href={`/wallet/${item.address}`}
-                    className="font-display font-bold text-xs text-white hover:text-cyan-glow flex items-center gap-1 hover:underline cursor-pointer"
-                  >
-                    <span>{item.address.slice(0, 14)}...{item.address.slice(-6)}</span>
-                    <ExternalLink className="w-3 h-3 text-white/30" />
-                  </Link>
-                  <div className="flex items-center gap-2 text-[10px] text-white/40 font-mono">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{new Date(item.timestamp).toLocaleString()}</span>
+            <div className="space-y-4">
+              {paginatedAnalyses.map((item) => (
+                <div 
+                  key={item.blobId}
+                  className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-5 rounded-xl border border-white/5 bg-white/2 hover:bg-white/4 hover:border-cyan-glow/20 transition-all gap-6 text-left"
+                >
+                  {/* Target Address Info */}
+                  <div className="space-y-2 max-w-sm">
+                    <Link 
+                      href={`/wallet/${item.address}`}
+                      className="font-display font-bold text-xs text-white hover:text-cyan-glow flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <span>{item.address.slice(0, 14)}...{item.address.slice(-6)}</span>
+                      <ExternalLink className="w-3 h-3 text-white/30" />
+                    </Link>
+                    <div className="flex items-center gap-2 text-[10px] text-white/40 font-mono">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{new Date(item.timestamp).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Score badge & proofs */}
+                  <div className="flex flex-wrap items-center gap-4 lg:gap-8">
+                    {/* Risk Score */}
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-display font-semibold tracking-wider text-white/40 uppercase block">Calculated Risk</span>
+                      <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded
+                        ${item.riskScore < 30 ? 'bg-success-green/10 text-success-green' : item.riskScore < 70 ? 'bg-warning-orange/10 text-warning-orange' : 'bg-rose-500/10 text-rose-400'}
+                      `}>
+                        {item.riskScore}% Risk
+                      </span>
+                    </div>
+
+                    {/* Blob hash */}
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-display font-semibold tracking-wider text-white/40 uppercase block">Blob Size</span>
+                      <span className="font-mono text-xs text-white/70">{(item.sizeBytes / 1024).toFixed(2)} KB</span>
+                    </div>
+
+                    {/* Walrus proof badge component */}
+                    <WalrusStorageBadge blobId={item.blobId} sizeBytes={item.sizeBytes} />
                   </div>
                 </div>
+              ))}
+            </div>
 
-                {/* Score badge & proofs */}
-                <div className="flex flex-wrap items-center gap-4 lg:gap-8">
-                  {/* Risk Score */}
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-display font-semibold tracking-wider text-white/40 uppercase block">Calculated Risk</span>
-                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded
-                      ${item.riskScore < 30 ? 'bg-success-green/10 text-success-green' : item.riskScore < 70 ? 'bg-warning-orange/10 text-warning-orange' : 'bg-rose-500/10 text-rose-400'}
-                    `}>
-                      {item.riskScore}% Risk
-                    </span>
-                  </div>
+            {/* Premium Cyber-Neon Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-white/5 gap-4 mt-6">
+                {/* Info section */}
+                <div className="text-xs text-white/40">
+                  Showing <span className="text-cyan-glow font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                  <span className="text-cyan-glow font-bold">
+                    {Math.min(currentPage * itemsPerPage, filteredAnalyses.length)}
+                  </span>{' '}
+                  of <span className="text-white/70 font-semibold">{filteredAnalyses.length}</span> archives
+                </div>
 
-                  {/* Blob hash */}
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-display font-semibold tracking-wider text-white/40 uppercase block">Blob Size</span>
-                    <span className="font-mono text-xs text-white/70">{(item.sizeBytes / 1024).toFixed(2)} KB</span>
-                  </div>
+                {/* Page numbers buttons */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 text-white/60 hover:text-cyan-glow hover:border-cyan-glow/40 bg-white/2 hover:bg-cyan-glow/5 transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+                    title="Previous Page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
 
-                  {/* Walrus proof badge component */}
-                  <WalrusStorageBadge blobId={item.blobId} sizeBytes={item.sizeBytes} />
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const pageNumber = index + 1;
+                    // Smart truncation for large number of pages
+                    if (
+                      totalPages > 6 &&
+                      pageNumber !== 1 &&
+                      pageNumber !== totalPages &&
+                      Math.abs(pageNumber - currentPage) > 1
+                    ) {
+                      if (
+                        (pageNumber === 2 && currentPage > 3) ||
+                        (pageNumber === totalPages - 1 && currentPage < totalPages - 2)
+                      ) {
+                        return (
+                          <span key={pageNumber} className="px-1 text-white/30 text-xs font-mono select-none">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    }
+
+                    const isActive = currentPage === pageNumber;
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`w-8 h-8 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer flex items-center justify-center
+                          ${
+                            isActive
+                              ? 'bg-cyan-glow text-[#050816] shadow-[0_0_10px_rgba(0,209,255,0.4)] border border-cyan-glow'
+                              : 'border border-white/10 text-white/60 hover:text-white hover:border-white/20 bg-white/2 hover:bg-white/5'
+                          }
+                        `}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 text-white/60 hover:text-cyan-glow hover:border-cyan-glow/40 bg-white/2 hover:bg-cyan-glow/5 transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+                    title="Next Page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Select items per page */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-display font-semibold tracking-wider text-white/30">Limit</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="bg-[#0b1220] border border-white/10 text-white/70 text-xs rounded-lg px-2.5 py-1.5 focus:border-cyan-glow outline-none cursor-pointer transition-colors"
+                  >
+                    <option value={5}>5 per page</option>
+                    <option value={10}>10 per page</option>
+                    <option value={20}>20 per page</option>
+                  </select>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>

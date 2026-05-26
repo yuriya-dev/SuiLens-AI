@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { Search, Wallet, LogOut, Radio, Cpu, Database } from 'lucide-react';
+import { Search, Wallet, LogOut, Radio, Cpu, Database, Menu } from 'lucide-react';
 import { ConnectModal, useCurrentAccount, useDisconnectWallet, useSignPersonalMessage } from '@mysten/dapp-kit';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function Navbar() {
   const router = useRouter();
@@ -16,12 +18,53 @@ export default function Navbar() {
     isVerifyingWallet,
     verifyWallet,
     connectWallet,
-    disconnectWallet
+    disconnectWallet,
+    mobileSidebarOpen,
+    setMobileSidebarOpen
   } = useStore();
 
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+
+  const [telemetry, setTelemetry] = useState({
+    ai: 'LOADING',
+    walrus: 'LOADING',
+    sui: 'LOADING'
+  });
+
+  React.useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/telemetry`);
+        if (res.ok) {
+          const data = await res.json();
+          setTelemetry({
+            ai: data.ai || 'FALLBACK',
+            walrus: data.walrus || 'OFFLINE',
+            sui: data.sui || 'OFFLINE'
+          });
+        } else {
+          setTelemetry({
+            ai: 'FALLBACK',
+            walrus: 'OFFLINE',
+            sui: 'OFFLINE'
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch live service telemetry:', err);
+        setTelemetry({
+          ai: 'FALLBACK',
+          walrus: 'OFFLINE',
+          sui: 'OFFLINE'
+        });
+      }
+    };
+
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   React.useEffect(() => {
     if (account?.address) {
@@ -30,6 +73,53 @@ export default function Navbar() {
       disconnectWallet();
     }
   }, [account, connectWallet, disconnectWallet]);
+
+  // Helper to resolve styling for AI telemetry state
+  const getAiStyle = () => {
+    switch (telemetry.ai) {
+      case 'ONLINE':
+        return { color: 'text-cyan-glow', label: 'ONLINE', iconClass: 'text-cyan-glow animate-pulse' };
+      case 'FALLBACK':
+        return { color: 'text-warning-orange', label: 'FALLBACK', iconClass: 'text-warning-orange animate-pulse' };
+      case 'OFFLINE':
+        return { color: 'text-danger-red', label: 'OFFLINE', iconClass: 'text-danger-red animate-pulse' };
+      case 'LOADING':
+      default:
+        return { color: 'text-white/40', label: 'LOADING...', iconClass: 'text-white/30 animate-pulse' };
+    }
+  };
+
+  // Helper to resolve styling for Walrus telemetry state
+  const getWalrusStyle = () => {
+    switch (telemetry.walrus) {
+      case 'SECURE':
+        return { color: 'text-purple-glow', label: 'SECURE', iconClass: 'text-purple-glow animate-pulse' };
+      case 'OFFLINE':
+        return { color: 'text-danger-red', label: 'OFFLINE', iconClass: 'text-danger-red animate-pulse' };
+      case 'LOADING':
+      default:
+        return { color: 'text-white/40', label: 'LOADING...', iconClass: 'text-white/30 animate-pulse' };
+    }
+  };
+
+  // Helper to resolve styling for Sui telemetry state
+  const getSuiStyle = () => {
+    switch (telemetry.sui) {
+      case 'ACTIVE':
+        return { color: 'text-success-green', label: 'ACTIVE', iconClass: 'text-success-green animate-pulse' };
+      case 'DEGRADED':
+        return { color: 'text-warning-orange', label: 'DEGRADED', iconClass: 'text-warning-orange animate-pulse' };
+      case 'OFFLINE':
+        return { color: 'text-danger-red', label: 'OFFLINE', iconClass: 'text-danger-red animate-pulse' };
+      case 'LOADING':
+      default:
+        return { color: 'text-white/40', label: 'LOADING...', iconClass: 'text-white/30 animate-pulse' };
+    }
+  };
+
+  const aiStyle = getAiStyle();
+  const walrusStyle = getWalrusStyle();
+  const suiStyle = getSuiStyle();
 
   const [inputVal, setInputVal] = useState('');
 
@@ -55,9 +145,18 @@ export default function Navbar() {
   };
 
   return (
-    <header className="glass-panel border-b border-[rgba(0,209,255,0.08)] bg-[rgba(5,8,22,0.4)] backdrop-blur-md h-20 px-8 flex items-center justify-between sticky top-0 z-30 w-full">
-      {/* Left Section - Quick Search */}
-      <form onSubmit={handleSearch} className="w-1/3 relative group">
+    <header className="glass-panel border-b border-[rgba(0,209,255,0.08)] bg-[rgba(5,8,22,0.4)] backdrop-blur-md h-20 px-4 md:px-8 flex items-center justify-between sticky top-0 z-30 w-full gap-4">
+      {/* Mobile Menu Toggle Burger Button */}
+      <button
+        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        className="flex md:hidden items-center justify-center w-10 h-10 rounded-xl border border-white/10 hover:border-cyan-glow/50 text-white/70 hover:text-cyan-glow bg-[#0b1220]/60 transition-all cursor-pointer shrink-0"
+        title="Toggle Menu"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Left Section - Quick Search (Hidden on Mobile for screen space) */}
+      <form onSubmit={handleSearch} className="hidden sm:block flex-1 md:flex-none md:w-1/3 max-w-sm relative group">
         <input 
           type="text" 
           placeholder="Paste Sui Wallet address or enter ens name..."
@@ -84,20 +183,20 @@ export default function Navbar() {
         <div className="hidden lg:flex items-center gap-5 border-r border-white/5 pr-6 text-[11px] font-display font-semibold tracking-wider text-white/50">
           {/* AI Copilot Status */}
           <div className="flex items-center gap-2">
-            <Cpu className="w-3.5 h-3.5 text-cyan-glow animate-pulse" />
-            <span>AI: <span className="text-cyan-glow">ONLINE</span></span>
+            <Cpu className={`w-3.5 h-3.5 ${aiStyle.iconClass}`} />
+            <span>AI: <span className={aiStyle.color}>{aiStyle.label}</span></span>
           </div>
 
           {/* Walrus Storage Status */}
           <div className="flex items-center gap-2">
-            <Database className="w-3.5 h-3.5 text-purple-glow animate-pulse" />
-            <span>WALRUS: <span className="text-purple-glow">SECURE</span></span>
+            <Database className={`w-3.5 h-3.5 ${walrusStyle.iconClass}`} />
+            <span>WALRUS: <span className={walrusStyle.color}>{walrusStyle.label}</span></span>
           </div>
 
           {/* Network Status */}
           <div className="flex items-center gap-2">
-            <Radio className="w-3.5 h-3.5 text-success-green animate-pulse" />
-            <span>SUI MAINNET: <span className="text-success-green">ACTIVE</span></span>
+            <Radio className={`w-3.5 h-3.5 ${suiStyle.iconClass}`} />
+            <span>SUI MAINNET: <span className={suiStyle.color}>{suiStyle.label}</span></span>
           </div>
         </div>
 

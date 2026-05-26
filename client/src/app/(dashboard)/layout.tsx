@@ -36,7 +36,7 @@ export default function DashboardGroupLayout({
         <Navbar />
         
         {/* Scrollable Viewport for Sub-pages */}
-        <main className="flex-1 overflow-y-auto p-8 relative">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
           {isWalletVerified ? (
             children
           ) : (

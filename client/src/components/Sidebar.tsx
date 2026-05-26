@@ -15,14 +15,15 @@ import {
   ChevronRight,
   Eye,
   Terminal,
-  Wallet
+  Wallet,
+  X
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { connectedWallet } = useStore();
+  const { connectedWallet, mobileSidebarOpen, setMobileSidebarOpen } = useStore();
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -36,11 +37,21 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside 
-      className={`glass-panel border-r border-[rgba(0,209,255,0.08)] flex flex-col justify-between h-screen sticky top-0 transition-all duration-300 z-40
-        ${isCollapsed ? 'w-20' : 'w-64'}
-      `}
-    >
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileSidebarOpen && (
+        <div 
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-[#050816]/75 backdrop-blur-sm z-45 md:hidden transition-all duration-300"
+        />
+      )}
+
+      <aside 
+        className={`glass-panel border-r border-[rgba(0,209,255,0.08)] bg-[rgba(5,8,22,0.95)] md:bg-[rgba(5,8,22,0.4)] backdrop-blur-md flex flex-col justify-between h-screen fixed md:sticky top-0 transition-all duration-300 z-50
+          ${isCollapsed ? 'w-20' : 'w-64'}
+          ${mobileSidebarOpen ? 'left-0' : '-left-full md:left-0'}
+        `}
+      >
       {/* Top Section - Brand Logo */}
       <div>
         <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.05)] h-20">
@@ -61,6 +72,15 @@ export default function Sidebar() {
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
+
+          {/* Close Menu Button for Mobile menu drawer */}
+          <button 
+            onClick={() => setMobileSidebarOpen(false)}
+            className="flex md:hidden items-center justify-center w-8 h-8 rounded-xl border border-white/10 hover:border-cyan-glow/50 text-white/50 hover:text-cyan-glow bg-white/5 transition-colors cursor-pointer shrink-0"
+            title="Close Menu"
+          >
+            <X className="w-4.5 h-4.5" />
+          </button>
         </div>
 
         {/* Navigation Items */}
@@ -77,6 +97,7 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.path}
+                onClick={() => setMobileSidebarOpen(false)}
                 className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative
                   ${isActive 
                     ? 'bg-gradient-to-r from-[rgba(0,209,255,0.12)] to-[rgba(139,92,246,0.04)] border-l-2 border-cyan-glow text-white shadow-[inset_0_0_12px_rgba(0,209,255,0.06)]' 
@@ -118,5 +139,6 @@ export default function Sidebar() {
         </a>
       </div>
     </aside>
+    </>
   );
 }

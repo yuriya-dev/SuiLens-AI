@@ -47,6 +47,10 @@ interface AppState {
   addChatMessage: (walletAddress: string, message: Omit<ChatMessage, 'id' | 'timestamp'>) => Promise<void>;
   updateSettings: (settings: Partial<{ simulateMode: boolean; tatumApiKey: string; walrusPublisher: string; openaiApiKey: string }>) => void;
   clearChat: (walletAddress: string) => void;
+  
+  // Mobile responsive states
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -59,6 +63,9 @@ export const useStore = create<AppState>((set, get) => ({
   savedAnalyses: [],
   chatThreads: {},
   isAnalyzing: false,
+  
+  mobileSidebarOpen: false,
+  setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 
   // Default API configuration (loaded from localStorage dynamically with Next.js SSR safeguard)
   simulateMode: typeof window !== 'undefined' ? (localStorage.getItem('suilens_simulateMode') === 'true') : false,
@@ -66,9 +73,13 @@ export const useStore = create<AppState>((set, get) => ({
   walrusPublisher: typeof window !== 'undefined' ? (localStorage.getItem('suilens_walrusPublisher') || 'https://publisher.walrus-testnet.walrus.space') : 'https://publisher.walrus-testnet.walrus.space',
   openaiApiKey: typeof window !== 'undefined' ? (localStorage.getItem('suilens_openaiApiKey') || '') : '',
 
-  connectWallet: (address) => set({ connectedWallet: address }),
+  connectWallet: (address) => {
+    set({ connectedWallet: address });
+    // Automatically trigger user-restricted history fetch upon connection
+    get().fetchHistory();
+  },
   
-  disconnectWallet: () => set({ connectedWallet: null, isWalletVerified: false }),
+  disconnectWallet: () => set({ connectedWallet: null, isWalletVerified: false, savedAnalyses: [] }),
 
   verifyWallet: async (address, signFn) => {
     set({ isVerifyingWallet: true });
@@ -170,7 +181,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchHistory: async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/history`);
+      const connected = get().connectedWallet;
+      if (!connected) {
+        set({ savedAnalyses: [] });
+        return;
+      }
+      
+      const response = await fetch(`${BACKEND_URL}/api/history?address=${encodeURIComponent(connected)}`);
       if (response.ok) {
         const data = await response.json();
         set({ savedAnalyses: data });
