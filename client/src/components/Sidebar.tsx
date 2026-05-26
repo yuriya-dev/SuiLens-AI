@@ -13,12 +13,12 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  Eye,
   Terminal,
   Wallet,
   X
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import BrandLogo from '@/components/BrandLogo';
 
 type MenuItem = {
   name: string;
@@ -141,14 +141,7 @@ export default function Sidebar() {
       <div>
         <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.05)] h-20">
           <Link href="/" className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-glow to-purple-glow shadow-[0_0_15px_rgba(0,209,255,0.3)]">
-              <Eye className="w-5 h-5 text-[#050816] animate-pulse" />
-            </div>
-            {!isCollapsed && (
-              <span className="font-display font-bold text-lg tracking-wider bg-gradient-to-r from-cyan-glow via-sui-blue to-purple-glow bg-clip-text text-transparent glow-text-cyan">
-                SuiLens <span className="text-white text-xs opacity-60 ml-0.5">AI</span>
-              </span>
-            )}
+            <BrandLogo compact showWordmark={!isCollapsed} className="gap-3" />
           </Link>
           
           <button 

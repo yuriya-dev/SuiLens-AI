@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { Search, Wallet, LogOut, Radio, Cpu, Database, Menu } from 'lucide-react';
 import { ConnectModal, useCurrentAccount, useDisconnectWallet, useSignPersonalMessage } from '@mysten/dapp-kit';
+import BrandLogo from '@/components/BrandLogo';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -157,6 +158,8 @@ export default function Navbar() {
       >
         <Menu className="w-5 h-5" />
       </button>
+
+      <BrandLogo className="hidden lg:flex flex-shrink-0" />
 
       {/* Left Section - Quick Search (Hidden on Mobile for screen space) */}
       <form onSubmit={handleSearch} className="hidden sm:block flex-1 md:flex-none md:w-1/3 max-w-sm relative group">

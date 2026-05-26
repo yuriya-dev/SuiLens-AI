@@ -19,7 +19,9 @@ export const metadata: Metadata = {
   title: 'SuiLens AI — AI Onchain Research Assistant for Sui',
   description: 'Understand Sui wallets, detect risks, track whales, and generate premium research reports with AI conversational intelligence, Tatum RPCs, and Walrus decentralized persistence.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.svg',
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
   }
 };
 

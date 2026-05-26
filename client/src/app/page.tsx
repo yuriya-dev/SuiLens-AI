@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { 
-  Eye, 
   ArrowRight, 
   Cpu, 
   Database, 
@@ -13,6 +12,7 @@ import {
   FileText, 
   CheckCircle
 } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 const HERO_WORDS = ["Onchain Intelligence.", "Wallet Tracking.", "Rug Exposure Analysis.", "Smart Money Detection."];
 
@@ -86,14 +86,7 @@ export default function LandingPage() {
 
       {/* Header bar */}
       <nav className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-glow to-purple-glow flex items-center justify-center shadow-[0_0_20px_rgba(0,209,255,0.4)]">
-            <Eye className="w-5 h-5 text-[#050816]" />
-          </div>
-          <span className="font-display font-bold text-xl tracking-wider bg-gradient-to-r from-cyan-glow to-purple-glow bg-clip-text text-transparent">
-            SuiLens <span className="text-white text-xs opacity-75 ml-0.5">AI</span>
-          </span>
-        </div>
+        <BrandLogo />
         
         <div className="flex items-center gap-4">
           <Link 
@@ -172,8 +165,8 @@ export default function LandingPage() {
                     className={`flex gap-3 text-left ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {msg.role !== 'user' && (
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-glow to-purple-glow flex items-center justify-center shrink-0">
-                        <Eye className="w-4 h-4 text-[#050816]" />
+                      <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                        <img src="/logo.svg" alt="SuiLens AI" className="w-full h-full object-contain p-1" />
                       </div>
                     )}
                     <div className={`p-3.5 rounded-2xl text-xs max-w-[80%] leading-relaxed font-sans
@@ -189,8 +182,8 @@ export default function LandingPage() {
 
                 {isTyping && (
                   <div className="flex gap-3 justify-start items-center">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-glow to-purple-glow flex items-center justify-center shrink-0">
-                      <Eye className="w-4 h-4 text-[#050816] animate-spin" />
+                    <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                      <img src="/logo.svg" alt="SuiLens AI" className="w-full h-full object-contain p-1 animate-spin" />
                     </div>
                     <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce"></span>

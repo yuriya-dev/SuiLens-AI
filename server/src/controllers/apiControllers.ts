@@ -118,11 +118,6 @@ export const chatController = async (req: Request, res: Response) => {
       null
     );
 
-    // Return HTTP 500 if AI reply is an API warning or error message
-    if (aiText.includes('⚠️')) {
-      return res.status(500).json({ error: aiText.replace(/⚠️/g, '').trim() });
-    }
-
     // Save logs to Supabase if database is active
     if (isDbActive) {
       try {
@@ -155,7 +150,10 @@ export const chatController = async (req: Request, res: Response) => {
       }
     }
 
-    return res.json({ content: aiText });
+    return res.json({
+      content: aiText,
+      warning: aiText.includes('⚠️')
+    });
   } catch (err: any) {
     return res.status(500).json({ error: 'AI reasoning failure.' });
   }
