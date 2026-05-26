@@ -183,3 +183,38 @@ export const insightsController = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to generate ecosystem insights.' });
   }
 };
+
+export const telemetryController = async (req: Request, res: Response) => {
+  const openaiApiKey = process.env.OPENAI_API_KEY || '';
+  const walrusPublisher = process.env.WALRUS_PUBLISHER_URL || '';
+
+  const ai = openaiApiKey && !openaiApiKey.includes('placeholder') ? 'ONLINE' : 'FALLBACK';
+  const walrus = walrusPublisher && walrusPublisher.startsWith('http') ? 'SECURE' : 'OFFLINE';
+
+  let sui: 'ACTIVE' | 'DEGRADED' | 'OFFLINE' = 'OFFLINE';
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    const rpcResponse = await fetch('https://fullnode.mainnet.sui.io:443', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'sui_getLatestCheckpointSequenceNumber',
+        params: []
+      })
+    });
+
+    clearTimeout(timeout);
+    sui = rpcResponse.ok ? 'ACTIVE' : 'DEGRADED';
+  } catch {
+    sui = 'OFFLINE';
+  }
+
+  return res.json({ ai, walrus, sui });
+};

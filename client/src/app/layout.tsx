@@ -29,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased dark`}>
-      <body className="h-full bg-background text-foreground antialiased selection:bg-cyan-glow/30 selection:text-white">
+    <html suppressHydrationWarning lang="en" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased dark`}>
+      <body suppressHydrationWarning className="h-full bg-background text-foreground antialiased selection:bg-cyan-glow/30 selection:text-white">
         <SuiProviders>
           {children}
         </SuiProviders>
