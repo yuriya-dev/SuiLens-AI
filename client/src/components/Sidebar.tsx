@@ -14,15 +14,19 @@ import {
   ChevronLeft, 
   ChevronRight,
   Eye,
-  Terminal
+  Terminal,
+  Wallet
 } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { connectedWallet } = useStore();
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    ...(connectedWallet ? [{ name: 'My Portfolio', path: '/portfolio', icon: Wallet }] : []),
     { name: 'On-Chain Auditor', path: '/wallet', icon: Shield },
     { name: 'AI Chat Copilot', path: '/chat', icon: MessageSquare },
     { name: 'Whale Tracker', path: '/whales', icon: Waves },

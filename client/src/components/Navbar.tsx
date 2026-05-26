@@ -14,12 +14,22 @@ export default function Navbar() {
     isAnalyzing,
     isWalletVerified,
     isVerifyingWallet,
-    verifyWallet
+    verifyWallet,
+    connectWallet,
+    disconnectWallet
   } = useStore();
 
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+
+  React.useEffect(() => {
+    if (account?.address) {
+      connectWallet(account.address);
+    } else {
+      disconnectWallet();
+    }
+  }, [account, connectWallet, disconnectWallet]);
 
   const [inputVal, setInputVal] = useState('');
 

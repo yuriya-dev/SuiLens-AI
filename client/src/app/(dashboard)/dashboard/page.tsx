@@ -12,12 +12,36 @@ import {
   ExternalLink,
   ChevronRight,
   Shield,
-  Eye
+  Eye,
+  Download
 } from 'lucide-react';
 import { generateRandomWhaleTx } from '@/lib/mockData';
 
 export default function MainDashboard() {
-  const { whaleFeed, addWhaleTx, savedAnalyses, fetchWhales, fetchHistory, simulateMode, openaiApiKey } = useStore();
+  const { 
+    connectedWallet, 
+    currentWalletData, 
+    analyzeWallet, 
+    whaleFeed, 
+    addWhaleTx, 
+    savedAnalyses, 
+    fetchWhales, 
+    fetchHistory, 
+    simulateMode, 
+    openaiApiKey 
+  } = useStore();
+
+  useEffect(() => {
+    if (connectedWallet) {
+      const decodedAddress = decodeURIComponent(connectedWallet).toLowerCase();
+      analyzeWallet(decodedAddress).catch(console.error);
+    }
+  }, [connectedWallet, analyzeWallet]);
+
+  const truncateAddress = (addr: string) => {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
   const [pulsePrice, setPulsePrice] = useState({ sui: 2.10, cetus: 0.35, deep: 0.06 });
   const [insights, setInsights] = useState<{ whaleInsight: string; riskInsight: string } | null>(null);
   const [isLoadingInsights, setIsLoadingInsights] = useState(true);
@@ -134,6 +158,9 @@ export default function MainDashboard() {
         { name: 'degentrader.sui', address: '0xde202f5a6b0c2eef9ba7582eb7bc3696f018889a', value: '$24.5K', risk: 88, tag: 'High Risk' }
       ];
 
+  const hasMatchedData = currentWalletData && 
+    currentWalletData.address.toLowerCase() === connectedWallet?.toLowerCase();
+
   return (
     <div className="space-y-8 text-left">
       {/* Top Welcome Title */}
@@ -151,6 +178,114 @@ export default function MainDashboard() {
           <span>LEDGER STREAM: SYNCHRONIZED</span>
         </div>
       </div>
+
+      {/* Connected Wallet Portfolio Overview (if connected) */}
+      {connectedWallet && (
+        <div className="glass-panel border-cyan-glow/15 p-6 rounded-2xl relative overflow-hidden transition-all duration-300">
+          {/* Glowing neon bg decoration */}
+          <div className="absolute w-[250px] h-[120px] rounded-full bg-cyan-glow/5 blur-[60px] -top-12 -left-12 pointer-events-none animate-pulse" />
+          <div className="absolute w-[200px] h-[100px] rounded-full bg-purple-glow/5 blur-[50px] -bottom-10 -right-10 pointer-events-none" />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+            {/* Left section: Greeting & Value */}
+            <div className="lg:col-span-4 space-y-4">
+              <div className="space-y-1">
+                <span className="font-display font-extrabold text-[10px] text-cyan-glow tracking-widest uppercase flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-glow animate-ping shrink-0"></span>
+                  Connected Portfolio
+                </span>
+                <h2 className="font-display font-bold text-xl text-white tracking-wide truncate">
+                  {hasMatchedData && currentWalletData.ensName ? currentWalletData.ensName : truncateAddress(connectedWallet)}
+                </h2>
+                <span className="font-sans text-[10px] text-white/40 uppercase tracking-wider bg-white/5 px-2.5 py-0.5 rounded border border-white/5 inline-block font-semibold">
+                  {hasMatchedData ? currentWalletData.tag : 'Sui Account'}
+                </span>
+              </div>
+              
+              <div className="space-y-1">
+                <span className="text-[9px] font-display font-semibold tracking-wider text-white/30 uppercase">Net Portfolio Value</span>
+                {hasMatchedData ? (
+                  <h3 className="font-display font-extrabold text-3xl text-white glow-text-cyan">
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(currentWalletData.portfolioValueUSD)}
+                  </h3>
+                ) : (
+                  <div className="h-9 w-44 bg-white/5 animate-pulse rounded-lg border border-white/5" />
+                )}
+              </div>
+            </div>
+
+            {/* Middle section: Token allocations snapshot list */}
+            <div className="lg:col-span-5 border-y lg:border-y-0 lg:border-x border-white/5 py-4 lg:py-0 lg:px-6 space-y-3">
+              <span className="text-[9px] font-display font-semibold tracking-wider text-white/30 uppercase block">Top Asset Distributions</span>
+              {hasMatchedData ? (
+                <div className="flex flex-wrap gap-2.5">
+                  {currentWalletData.tokenAllocations.slice(0, 4).map((tok, idx) => (
+                    <div 
+                      key={`${tok.symbol}-${idx}`}
+                      className="flex items-center gap-2 bg-[#0b1220]/60 border border-white/5 rounded-xl px-3 py-2 text-xs shadow-sm hover:border-cyan-glow/20 transition-all font-mono"
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tok.color }} />
+                      <span className="text-white/80 font-bold">{tok.symbol}</span>
+                      <span className="text-white/50">{tok.percentage}%</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="h-8 w-20 bg-white/5 animate-pulse rounded-xl" />
+                  <div className="h-8 w-24 bg-white/5 animate-pulse rounded-xl" />
+                  <div className="h-8 w-16 bg-white/5 animate-pulse rounded-xl" />
+                </div>
+              )}
+            </div>
+
+            {/* Right section: Scores and quick links */}
+            <div className="lg:col-span-3 space-y-4">
+              <div className="flex justify-between items-center bg-[#0b1220]/60 border border-white/5 p-3 rounded-xl">
+                <div className="text-left space-y-0.5">
+                  <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase">Risk Level</span>
+                  {hasMatchedData ? (
+                    <span className={`font-mono text-xs font-bold block ${currentWalletData.riskScore < 30 ? 'text-success-green' : currentWalletData.riskScore < 70 ? 'text-warning-orange' : 'text-danger-red'}`}>
+                      {currentWalletData.riskScore}% Risk
+                    </span>
+                  ) : (
+                    <div className="h-4 w-12 bg-white/5 animate-pulse rounded" />
+                  )}
+                </div>
+                <div className="w-px h-6 bg-white/10" />
+                <div className="text-left space-y-0.5">
+                  <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase">Smart Score</span>
+                  {hasMatchedData ? (
+                    <span className="font-mono text-xs font-bold text-purple-glow block">
+                      {currentWalletData.smartMoneyScore}%
+                    </span>
+                  ) : (
+                    <div className="h-4 w-12 bg-white/5 animate-pulse rounded" />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2.5">
+                <Link
+                  href="/portfolio"
+                  className="flex-1 text-center py-2.5 rounded-xl border border-cyan-glow/20 bg-cyan-glow/5 hover:bg-cyan-glow hover:text-[#050816] text-cyan-glow font-display font-bold uppercase tracking-wider text-[10px] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                >
+                  <span>View Portfolio</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+                
+                <Link
+                  href={`/reports?address=${connectedWallet}&download=true`}
+                  className="flex-1 text-center py-2.5 rounded-xl border border-white/5 bg-white/2 hover:bg-white/5 text-white/70 hover:text-white font-display font-bold uppercase tracking-wider text-[10px] transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <span>Brief PDF</span>
+                  <Download className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid 1: Market Pulse Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
