@@ -178,7 +178,7 @@ export default function Sidebar() {
       {/* Bottom Footer Section */}
       <div className="p-4 border-t border-[rgba(255,255,255,0.05)]">
         <a 
-          href="https://github.com" 
+          href="https://github.com/yuriya-dev/SuiLens-AI" 
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors group"
