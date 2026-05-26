@@ -142,7 +142,12 @@ graph TD
    OPENAI_API_KEY=your_openai_api_key
    WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space
    ```
-
+   Prisma Client generation is now automatic for `npm run dev`, `npm run build`, and `npm start`.
+   If needed, you can still run it manually:
+   ```bash
+   npm run prisma:generate
+   ```
+   
 4. **Run the development server:**
    ```bash
    npm run dev

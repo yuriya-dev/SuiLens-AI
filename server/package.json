@@ -4,8 +4,11 @@
   "description": "API Gateway and scoring engine for SuiLens AI",
   "main": "dist/index.js",
   "scripts": {
+    "prestart": "prisma generate",
     "start": "ts-node src/index.ts",
+    "predev": "prisma generate",
     "dev": "ts-node-dev --respawn src/index.ts",
+    "prebuild": "prisma generate",
     "build": "tsc"
   },
   "dependencies": {
