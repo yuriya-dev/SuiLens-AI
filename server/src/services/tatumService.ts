@@ -232,6 +232,8 @@ export class TatumService {
       // Map balances to TokenAllocation
       let tokenAllocations: TokenAllocation[] = [];
       let totalPortfolioValue = 0;
+      const stakingPositions: any[] = [];
+      const lendingPositions: any[] = [];
 
       for (const balance of balances) {
         const coinType = balance.coinType;
@@ -239,6 +241,43 @@ export class TatumService {
 
         // Skip zero balances
         if (rawBalance <= 0) continue;
+
+        // Check if coinType corresponds to a lending pool representation
+        if (coinType.toLowerCase().includes('scallop') || coinType.includes('MarketCoin')) {
+          const parts = coinType.split('::');
+          const innerCoin = coinType.includes('<') 
+            ? coinType.substring(coinType.indexOf('<') + 1, coinType.indexOf('>'))
+            : '';
+          const baseSymbol = innerCoin ? innerCoin.split('::').pop()?.toUpperCase() : 'SUI';
+          const decimals = coinType.toLowerCase().includes('usdc') ? 6 : 9;
+          const balanceFormatted = rawBalance / Math.pow(10, decimals);
+          const price = baseSymbol === 'USDC' ? 1.00 : livePrices.SUI;
+          const valueUSD = balanceFormatted * price;
+          lendingPositions.push({
+            protocol: 'Scallop Protocol',
+            asset: baseSymbol || 'SUI',
+            amount: parseFloat(balanceFormatted.toFixed(3)),
+            apy: baseSymbol === 'USDC' ? 6.2 : 4.2,
+            valueUSD: parseFloat(valueUSD.toFixed(2))
+          });
+        } else if (coinType.toLowerCase().includes('navi') || coinType.includes('ncoin')) {
+          const parts = coinType.split('::');
+          const innerCoin = coinType.includes('<') 
+            ? coinType.substring(coinType.indexOf('<') + 1, coinType.indexOf('>'))
+            : '';
+          const baseSymbol = innerCoin ? innerCoin.split('::').pop()?.toUpperCase() : 'SUI';
+          const decimals = coinType.toLowerCase().includes('usdc') ? 6 : 9;
+          const balanceFormatted = rawBalance / Math.pow(10, decimals);
+          const price = baseSymbol === 'USDC' ? 1.00 : livePrices.SUI;
+          const valueUSD = balanceFormatted * price;
+          lendingPositions.push({
+            protocol: 'Navi Protocol',
+            asset: baseSymbol || 'SUI',
+            amount: parseFloat(balanceFormatted.toFixed(3)),
+            apy: baseSymbol === 'USDC' ? 6.5 : 4.5,
+            valueUSD: parseFloat(valueUSD.toFixed(2))
+          });
+        }
 
         // Check if it is a known config or default it
         let config = tokenConfig[coinType];
@@ -315,11 +354,35 @@ export class TatumService {
           const stakesList = stakesData?.result || [];
           
           for (const stakeObj of stakesList) {
+            const validatorAddress = stakeObj.validatorAddress;
             const stakes = stakeObj.stakes || [];
+            let validatorAmountMIST = 0;
+            let validatorRewardsMIST = 0;
             for (const s of stakes) {
               const principal = parseFloat(s.principal) || 0;
               const reward = parseFloat(s.estimatedReward) || 0;
+              validatorAmountMIST += principal;
+              validatorRewardsMIST += reward;
               nativeStakedMIST += (principal + reward);
+            }
+            
+            // Map validator address to friendly names
+            const validatorNameMap: Record<string, string> = {
+              '0x72a5a6b0c2eef9ba7582eb7bc3696f018882fd': 'Cetus Validator Pool',
+              '0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd': 'Haedal Validator Node',
+            };
+            const validatorName = validatorNameMap[validatorAddress.toLowerCase()] || 
+                                  `Validator ${validatorAddress.slice(0, 6)}...${validatorAddress.slice(-4)}`;
+            
+            const totalSuiStaked = (validatorAmountMIST + validatorRewardsMIST) / 1000000000;
+            if (totalSuiStaked > 0) {
+              stakingPositions.push({
+                validatorAddress,
+                validatorName,
+                amount: parseFloat(totalSuiStaked.toFixed(3)),
+                apy: 4.8,
+                rewards: parseFloat((validatorRewardsMIST / 1000000000).toFixed(4))
+              });
             }
           }
         }
@@ -497,7 +560,9 @@ export class TatumService {
         activityTimeline: [
           { id: "tx-live-1", type: "contract_call", amountUSD: 0, timestamp: new Date().toISOString(), status: "success", hash: "0x_rpc_verified_tx_hash", interactedWith: "Verified Sui Mainnet Node Entry", isSuspicious: false }
         ],
-        riskIndicators
+        riskIndicators,
+        stakingPositions,
+        lendingPositions
       };
     } catch (err) {
       console.error('[RPC Service Error] Critical live failure, falling back to mock database:', err);

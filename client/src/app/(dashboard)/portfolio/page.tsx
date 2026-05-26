@@ -369,32 +369,39 @@ export default function MyPortfolioPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Native Staking details */}
-                    <div className="bg-white/2 border border-white/5 p-4 rounded-xl space-y-2">
-                      <span className="text-[9px] font-display font-bold text-white/40 uppercase tracking-wide block">Validator allocation</span>
-                      <div className="flex justify-between items-center text-xs font-mono text-white/80">
-                        <span className="font-sans">Haedal Validator Node</span>
-                        <span className="font-bold text-success-green">4.8% APY</span>
+                  <div className="space-y-3.5">
+                    {currentWalletData.stakingPositions && currentWalletData.stakingPositions.length > 0 ? (
+                      currentWalletData.stakingPositions.map((stake, sIdx) => (
+                        <div key={sIdx} className="bg-white/2 border border-white/5 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-display font-bold text-white/40 uppercase tracking-wide block">Delegation Target</span>
+                            <span className="font-sans text-xs font-bold text-white block">{stake.validatorName}</span>
+                            <span className="font-mono text-[9px] text-white/30 block select-all">{stake.validatorAddress}</span>
+                          </div>
+                          
+                          <div className="flex gap-6 items-center text-left sm:text-right">
+                            <div className="space-y-0.5">
+                              <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase block">Staked Amount</span>
+                              <span className="font-mono text-xs font-bold text-white block">{stake.amount.toLocaleString()} SUI</span>
+                            </div>
+                            <div className="w-px h-6 bg-white/10" />
+                            <div className="space-y-0.5">
+                              <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase block">Validator APY</span>
+                              <span className="font-mono text-xs font-bold text-success-green block">{stake.apy}% APY</span>
+                            </div>
+                            <div className="w-px h-6 bg-white/10" />
+                            <div className="space-y-0.5">
+                              <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase block">Earned Rewards</span>
+                              <span className="font-mono text-xs font-bold text-purple-glow block">+{stake.rewards} SUI</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-white/2 border border-white/5 p-4 rounded-xl text-center text-white/50 text-xs py-6">
+                        No active staking delegations found in ledger.
                       </div>
-                      <div className="flex justify-between items-center text-xs font-mono text-white/80">
-                        <span className="font-sans">Liquid Stake reserves</span>
-                        <span className="font-bold text-purple-glow">5.2% APY</span>
-                      </div>
-                    </div>
-                    
-                    {/* Rewards detail */}
-                    <div className="bg-white/2 border border-white/5 p-4 rounded-xl space-y-2">
-                      <span className="text-[9px] font-display font-bold text-white/40 uppercase tracking-wide block">Estimated yield logs</span>
-                      <div className="flex justify-between items-center text-xs font-mono text-white/80">
-                        <span className="font-sans">Annualized Earnings</span>
-                        <span className="font-bold text-white">+${(totalStakedSui * 2.10 * 0.05).toFixed(2)} USD</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs font-mono text-white/80">
-                        <span className="font-sans">Accumulated Premiums</span>
-                        <span className="font-bold text-cyan-glow">haSUI Liquid</span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -417,31 +424,33 @@ export default function MyPortfolioPage() {
                 <h3 className="font-display font-bold text-base text-white">DeFi Lending Pools Exposure</h3>
               </div>
 
-              {isLendingActive ? (
+              {currentWalletData.lendingPositions && currentWalletData.lendingPositions.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Scallop details */}
-                  <div className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/2 hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all text-left">
-                    <div className="space-y-1">
-                      <span className="font-display font-bold text-xs text-white block">Scallop Protocol Supply</span>
-                      <span className="font-sans text-[10px] text-white/40 uppercase tracking-widest font-semibold block">Liquidity Provisioning</span>
+                  {currentWalletData.lendingPositions.map((lend, lIdx) => (
+                    <div key={lIdx} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-white/5 bg-white/2 hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all text-left gap-4">
+                      <div className="space-y-1">
+                        <span className="font-display font-bold text-xs text-white block">{lend.protocol} Supply</span>
+                        <span className="font-sans text-[10px] text-white/40 uppercase tracking-widest font-semibold block">{lend.asset} Liquidity Pool</span>
+                      </div>
+                      
+                      <div className="flex gap-6 items-center text-left sm:text-right">
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase block">Supplied Balance</span>
+                          <span className="font-mono text-xs font-bold text-white block">{lend.amount.toLocaleString()} {lend.asset}</span>
+                        </div>
+                        <div className="w-px h-6 bg-white/10" />
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase block">Net Yield</span>
+                          <span className="font-mono text-xs font-bold text-emerald-400 block">{lend.apy}% APY</span>
+                        </div>
+                        <div className="w-px h-6 bg-white/10" />
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-display font-semibold tracking-wider text-white/30 uppercase block">Current USD Value</span>
+                          <span className="font-mono text-xs font-bold text-white block">${lend.valueUSD.toLocaleString()}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-mono text-xs font-bold text-white block">150 SUI</span>
-                      <span className="font-mono text-[10px] font-bold text-emerald-400">4.2% APY</span>
-                    </div>
-                  </div>
-
-                  {/* Navi details */}
-                  <div className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/2 hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all text-left">
-                    <div className="space-y-1">
-                      <span className="font-display font-bold text-xs text-white block">Navi protocol Reserves</span>
-                      <span className="font-sans text-[10px] text-white/40 uppercase tracking-widest font-semibold block">Stablecoin Reserves</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono text-xs font-bold text-white block">100 USDC</span>
-                      <span className="font-mono text-[10px] font-bold text-emerald-400">6.5% APY</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="p-8 text-center bg-white/2 rounded-2xl border border-dashed border-white/5 space-y-3">

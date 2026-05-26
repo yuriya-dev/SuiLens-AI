@@ -28,6 +28,22 @@ export interface RiskIndicator {
   severity: 'low' | 'medium' | 'high';
 }
 
+export interface StakingPosition {
+  validatorAddress: string;
+  validatorName: string;
+  amount: number;
+  apy: number;
+  rewards: number;
+}
+
+export interface LendingPosition {
+  protocol: string;
+  asset: string;
+  amount: number;
+  apy: number;
+  valueUSD: number;
+}
+
 export interface WalletData {
   address: string;
   ensName?: string;
@@ -45,6 +61,8 @@ export interface WalletData {
   tokenAllocations: TokenAllocation[];
   activityTimeline: TransactionActivity[];
   riskIndicators: RiskIndicator[];
+  stakingPositions?: StakingPosition[];
+  lendingPositions?: LendingPosition[];
 }
 
 export interface WhaleFeedItem {

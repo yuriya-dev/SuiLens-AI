@@ -45,7 +45,9 @@ export const mockWallets: Record<string, WalletData> = {
     riskIndicators: [
       { title: "Interaction with Unverified Contracts", description: "Interacted with 5+ unverified smart contracts in the past 24 hours.", severity: "high" },
       { title: "Extreme Asset Concentration", description: "95% of total portfolio value is concentrated in highly illiquid memecoins.", severity: "high" }
-    ]
+    ],
+    stakingPositions: [],
+    lendingPositions: []
   },
   "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd": {
     address: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd",
@@ -72,6 +74,15 @@ export const mockWallets: Record<string, WalletData> = {
     ],
     riskIndicators: [
       { title: "Stablecoin Dominance", description: "64% of total assets are stablecoins, shielding from cryptocurrency volatility.", severity: "low" }
+    ],
+    stakingPositions: [
+      { validatorAddress: "0x72a5a6b0c2eef9ba7582eb7bc3696f018882fd", validatorName: "Cetus Validator Pool", amount: 15000, apy: 4.8, rewards: 125.40 },
+      { validatorAddress: "0x3c2fa56b0c2eef9ba7582eb7bc3696f018882fd", validatorName: "Haedal Validator Node", amount: 10000, apy: 5.2, rewards: 95.10 }
+    ],
+    lendingPositions: [
+      { protocol: "Navi Protocol", asset: "BUCK", amount: 120000, apy: 6.5, valueUSD: 120000 },
+      { protocol: "Scallop Protocol", asset: "USDC", amount: 80000, apy: 5.8, valueUSD: 80000 },
+      { protocol: "Scallop Protocol", asset: "SCA", amount: 65000, apy: 6.2, valueUSD: 49550 }
     ]
   }
 };
@@ -112,7 +123,9 @@ export const generateMockWallet = (address: string): WalletData => {
       riskIndicators: [
         { title: "Standard Move Coin Template", description: "Implements standard coin registry patterns from the Sui framework, guaranteeing lack of malicious backdoors.", severity: "low" },
         { title: "Verified Package Publisher", description: "Sui system validator checks confirm compiled Move bytecode matches publisher proof.", severity: "low" }
-      ]
+      ],
+      stakingPositions: [],
+      lendingPositions: []
     };
   }
 
@@ -133,6 +146,14 @@ export const generateMockWallet = (address: string): WalletData => {
     summaryProfessional = `This address focuses on safe, long-term capital preservation and liquid staking SUI yields.`;
     summaryRoast = `Staking SUI for 4% is safe, but your wallet's excitement level is absolute zero.`;
   }
+
+  const simulatedStakingPositions = calculatedRisk < 30 ? [
+    { validatorAddress: "0x72a5a6b0c2eef9ba7582eb7bc3696f018882fd", validatorName: "Cetus Validator Pool", amount: (hashVal % 1500) + 150, apy: 4.8, rewards: parseFloat(((hashVal % 150) * 0.05).toFixed(2)) }
+  ] : [];
+
+  const simulatedLendingPositions = calculatedRisk < 30 ? [
+    { protocol: "Scallop Protocol", asset: "USDC", amount: (hashVal % 3000) + 100, apy: 5.8, valueUSD: (hashVal % 3000) + 100 }
+  ] : [];
 
   return {
     address: address.startsWith('0x') ? address : '0x' + address.slice(0, 40),
@@ -158,7 +179,9 @@ export const generateMockWallet = (address: string): WalletData => {
     ],
     riskIndicators: [
       { title: "Standard Protocol Usage", description: "Interacts primarily with main-tier DeFi primitives.", severity: calculatedRisk > 60 ? "medium" : "low" }
-    ]
+    ],
+    stakingPositions: simulatedStakingPositions,
+    lendingPositions: simulatedLendingPositions
   };
 };
 
