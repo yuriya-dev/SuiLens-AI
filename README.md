@@ -140,7 +140,7 @@ graph TD
    PORT=3001
    TATUM_API_KEY=your_tatum_sui_mainnet_gateway_key
    OPENAI_API_KEY=your_openai_api_key
-   WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space
+   WALRUS_PUBLISHER_URL=https://publisher.walrus.storage
    ```
    Prisma Client generation is now automatic for `npm run dev`, `npm run build`, and `npm start`.
    If needed, you can still run it manually:
@@ -185,9 +185,9 @@ We leverage Tatum to provide enterprise-grade RPC infrastructure without the ove
 * Feeds cleanly indexed JSON lists directly into the AI analyzer pipeline.
 
 ### 🦭 Walrus Decentralized Storage
-Instead of relying on a centralized database that could lose records, all generated analysis reports are committed to the Walrus Testnet:
+Instead of relying on a centralized database that could lose records, all generated analysis reports are committed to Walrus storage:
 * **Upload**:
-  We upload JSON report payloads via HTTP PUT requests to the Walrus publisher nodes (`https://publisher.walrus-testnet.walrus.space/v1/blobs?epochs=1`).
+   We upload JSON report payloads via HTTP PUT requests to the Walrus publisher nodes (`https://publisher.walrus.storage/v1/blobs?epochs=1`).
 * **Retrieval**:
   The resulting `blobId` acts as an immutable content-addressable hash. Reports are served on the UI instantly using the Walrus testnet aggregator gateway:
   `https://aggregator.walrus-testnet.walrus.space/v1/blobs/[blobId]`.
